@@ -36,7 +36,7 @@ export function Login() {
 
       <div className="relative z-10 w-full lg:w-[44%] border-r border-white/[0.06] flex flex-col justify-center px-8 py-12 lg:px-14">
         <div className="max-w-md mx-auto w-full space-y-10">
-          <div className="text-center">
+          <div className="text-center stagger-1">
             <div className="inline-flex items-center justify-center mb-5">
               <Logo size="xl" showWordmark linkTo="/" />
             </div>
@@ -46,38 +46,44 @@ export function Login() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label="Email Address"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your.email@company.com"
-              icon={<User className="w-4 h-4" />}
-              required
-            />
+            <div className="stagger-2">
+              <Input
+                label="Email Address"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@company.com"
+                icon={<User className="w-4 h-4" />}
+                required
+              />
+            </div>
 
-            <Input
-              label="Password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your secure password"
-              icon={<Lock className="w-4 h-4" />}
-              required
-            />
+            <div className="stagger-3">
+              <Input
+                label="Password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your secure password"
+                icon={<Lock className="w-4 h-4" />}
+                required
+              />
+            </div>
 
             {error && (
-              <div className="border-l-4 border-status-critical bg-status-critical/5 p-3 rounded-r-md">
+              <div className="border-l-4 border-status-critical bg-status-critical/5 p-3 rounded-r-md animate-slide-up">
                 <p className="text-sm text-status-critical">{error}</p>
               </div>
             )}
 
-            <Button type="submit" variant="primary" className="w-full" loading={isLoading}>
-              Sign In
-            </Button>
+            <div className="stagger-4">
+              <Button type="submit" variant="primary" className="w-full btn-shimmer" loading={isLoading}>
+                Sign In
+              </Button>
+            </div>
           </form>
 
-          <div className="pt-6 border-t border-white/[0.06] space-y-3">
+          <div className="pt-6 border-t border-white/[0.06] space-y-3 stagger-5">
             <div className="flex items-center gap-2 text-xs text-ink-ghost">
               <Shield className="w-3.5 h-3.5" />
               <span className="font-medium">Secure Authentication</span>
@@ -92,7 +98,7 @@ export function Login() {
 
       <div className="relative z-10 hidden lg:flex lg:flex-1 bg-white/[0.02] backdrop-blur-sm items-center justify-center p-12">
         <div className="max-w-lg space-y-10">
-          <h2 className="text-2xl font-display font-bold text-ink-primary">
+          <h2 className="text-2xl font-display font-bold text-ink-primary stagger-2">
             Evidence-Based Assessment
           </h2>
 
@@ -110,10 +116,10 @@ export function Login() {
                 title: 'Defensible Decisions',
                 text: 'Comprehensive evidence trails and AI-powered insights create documented, justifiable hiring recommendations.',
               },
-            ].map((block) => (
+            ].map((block, i) => (
               <div
                 key={block.title}
-                className="glass-subtle border-l-4 border-l-bronze/30 rounded-r-md p-5"
+                className={`glass-subtle border-l-4 border-l-bronze/30 rounded-r-md p-5 stagger-${i + 3}`}
               >
                 <h3 className="text-sm font-semibold text-ink-primary mb-2">{block.title}</h3>
                 <p className="text-sm text-ink-secondary leading-relaxed">{block.text}</p>
@@ -121,7 +127,7 @@ export function Login() {
             ))}
           </div>
 
-            <div className="pt-8 border-t border-white/[0.06]">
+            <div className="pt-8 border-t border-white/[0.06] stagger-6">
             <h3 className="text-sm font-semibold text-ink-primary mb-4">System Capabilities</h3>
             <div className="grid grid-cols-2 gap-3">
               {[

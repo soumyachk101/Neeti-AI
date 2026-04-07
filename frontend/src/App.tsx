@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, Suspense, type ReactNode } from 'react';
 import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -15,9 +15,27 @@ import { About } from './pages/About';
 import { FAQ } from './pages/FAQ';
 import { Troubleshooting } from './pages/Troubleshooting';
 import { useAuthStore } from './store/useAuthStore';
+import { ToastProvider } from './components/Toast';
+import { Logo } from './components/Logo';
 import './index.css';
 
 import { Component, type ErrorInfo } from 'react';
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-neeti-bg flex items-center justify-center">
+      <div className="flex flex-col items-center gap-5 animate-fade-in">
+        <Logo size="lg" className="animate-pulse-subtle" />
+        <div className="flex items-center gap-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-bronze animate-pulse-dot" style={{ animationDelay: '0ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-bronze animate-pulse-dot" style={{ animationDelay: '200ms' }} />
+          <div className="w-1.5 h-1.5 rounded-full bg-bronze animate-pulse-dot" style={{ animationDelay: '400ms' }} />
+        </div>
+        <p className="text-xs font-mono text-ink-ghost tracking-widest uppercase">Initializing System</p>
+      </div>
+    </div>
+  );
+}
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error?: Error }> {
   constructor(props: { children: ReactNode }) {
@@ -34,7 +52,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-neeti-bg flex items-center justify-center p-8">
-          <div className="max-w-md text-center space-y-6">
+          <div className="max-w-md text-center space-y-6 animate-fade-up">
             <div className="text-6xl font-mono text-status-critical">!</div>
             <h1 className="text-2xl font-display text-ink-primary">Something went wrong</h1>
             <p className="text-ink-secondary">
@@ -70,7 +88,7 @@ function RecruiterRoute({ children }: { children: ReactNode }) {
 function NotFound() {
   return (
     <div className="min-h-screen bg-neeti-bg flex items-center justify-center p-8">
-      <div className="max-w-md text-center space-y-6">
+      <div className="max-w-md text-center space-y-6 animate-fade-up">
         <div className="text-8xl font-mono text-bronze/40">404</div>
         <h1 className="text-2xl font-display text-ink-primary">Page Not Found</h1>
         <p className="text-ink-secondary">
@@ -96,51 +114,55 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/troubleshooting" element={<Troubleshooting />} />
-          <Route path="/privacy" element={<About />} />
-          <Route path="/terms" element={<About />} />
-          <Route path="/cookies" element={<About />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/join" element={<ProtectedRoute><SessionJoin /></ProtectedRoute>} />
-          <Route
-            path="/sessions/join"
-            element={<ProtectedRoute><SessionJoin /></ProtectedRoute>}
-          />
-          <Route path="/interview" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
-          <Route path="/sessions/:id/interview" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
-          <Route
-            path="/dashboard"
-            element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
-          />
-          <Route
-            path="/sessions/create"
-            element={<RecruiterRoute><SessionCreate /></RecruiterRoute>}
-          />
-          <Route
-            path="/sessions/:id"
-            element={<ProtectedRoute><SessionDetail /></ProtectedRoute>}
-          />
-          <Route
-            path="/sessions/:sessionId/monitor"
-            element={<RecruiterRoute><SessionMonitor /></RecruiterRoute>}
-          />
-          <Route
-            path="/sessions/:sessionId/results"
-            element={<ProtectedRoute><SessionResults /></ProtectedRoute>}
-          />
-          <Route
-            path="/evaluation/:id"
-            element={<ProtectedRoute><EvaluationReport /></ProtectedRoute>}
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
+      <ToastProvider>
+        <Suspense fallback={<LoadingFallback />}>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/faq" element={<FAQ />} />
+              <Route path="/troubleshooting" element={<Troubleshooting />} />
+              <Route path="/privacy" element={<About />} />
+              <Route path="/terms" element={<About />} />
+              <Route path="/cookies" element={<About />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/join" element={<ProtectedRoute><SessionJoin /></ProtectedRoute>} />
+              <Route
+                path="/sessions/join"
+                element={<ProtectedRoute><SessionJoin /></ProtectedRoute>}
+              />
+              <Route path="/interview" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
+              <Route path="/sessions/:id/interview" element={<ProtectedRoute><InterviewRoom /></ProtectedRoute>} />
+              <Route
+                path="/dashboard"
+                element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/sessions/create"
+                element={<RecruiterRoute><SessionCreate /></RecruiterRoute>}
+              />
+              <Route
+                path="/sessions/:id"
+                element={<ProtectedRoute><SessionDetail /></ProtectedRoute>}
+              />
+              <Route
+                path="/sessions/:sessionId/monitor"
+                element={<RecruiterRoute><SessionMonitor /></RecruiterRoute>}
+              />
+              <Route
+                path="/sessions/:sessionId/results"
+                element={<ProtectedRoute><SessionResults /></ProtectedRoute>}
+              />
+              <Route
+                path="/evaluation/:id"
+                element={<ProtectedRoute><EvaluationReport /></ProtectedRoute>}
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Router>
+        </Suspense>
+      </ToastProvider>
     </ErrorBoundary>
   );
 }

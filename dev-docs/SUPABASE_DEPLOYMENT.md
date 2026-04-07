@@ -1,289 +1,84 @@
-# Supabase Deployment Guide
-# Production-ready deployment for Neeti AI
+﻿# Supabase Deployment Guide
 
-## Overview
-This guide helps you deploy Neeti AI with Supabase for production-grade scalability, real-time features, and managed infrastructure.
+This guide focuses on Supabase-specific configuration for authentication and database connectivity.
 
-## Prerequisites
-- Supabase account (https://supabase.com)
-- Docker and Docker Compose
-- Domain name (optional, for custom URLs)
+## 1) Supabase Project Setup
 
-## Step 1: Create Supabase Project
+1. Create a Supabase project.
+2. Collect:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+3. Confirm Auth providers and email settings are configured for your environment.
 
-1. **Sign up** at https://supabase.com
-2. **Create new project**:
-   - Project name: `neeti-ai`
-   - Database password: Generate strong password
-   - Region: Choose closest to your users
-3. **Get project credentials**:
-   - Go to Project Settings → API
-   - Copy Project URL, Anon Key, Service Role Key
+## 2) Environment Configuration
 
-## Step 2: Configure Database
+Set these in production runtime:
 
-### Option A: Use Supabase Database (Recommended)
-```bash
-# No database setup needed - Supabase manages it
-# Just run migrations to create tables
-```
-
-### Option B: External PostgreSQL
-```bash
-# Use your own PostgreSQL instance
-# Configure connection in .env
-```
-
-## Step 3: Set Environment Variables
-
-Create `.env` file with Supabase configuration:
-
-```bash
-# Supabase Configuration
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+```env
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_ANON_KEY=<anon>
+SUPABASE_SERVICE_ROLE_KEY=<service_role>
 USE_SUPABASE=True
-
-# Keep existing config
-APP_NAME=Neeti AI
-ENVIRONMENT=production
 ```
 
-## Step 4: Run Database Migrations
+For DB connectivity, either:
 
-```bash
-# Install dependencies
-pip install -r requirements.txt
+- set `DATABASE_URL` (preferred), or
+- set `POSTGRES_*` values.
 
-# Initialize database tables (uses SQLAlchemy create_all)
+## 3) Database Connectivity Notes
+
+- Use a direct Postgres connection compatible with asyncpg.
+- If your connection string starts with `postgres://` or `postgresql://`, backend normalizes it to `postgresql+asyncpg://`.
+
+## 4) Schema Initialization
+
+```powershell
 python init_db.py
-
-# Or apply SQL migrations from migrations/ folder
-# via Supabase SQL Editor
 ```
 
-## Step 5: Deploy Application
+Optional SQL scripts in `migrations/` can be applied manually as needed.
 
-### Docker Compose (Recommended)
-```yaml
-# docker-compose.prod.yml
-services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
-      - USE_SUPABASE=true
-    depends_on:
-      - redis
+## 5) Auth and Role Handling
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+- User login and token lifecycle are Supabase-backed.
+- Backend resolves user role defensively and applies role checks per endpoint.
+- Protected endpoints require `Authorization: Bearer <token>`.
 
-  worker:
-    build: .
-    command: celery -A app.workers.celery_app worker --loglevel=info
-    environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
-      - USE_SUPABASE=true
-    depends_on:
-      - redis
+## 6) CORS and Frontend Integration
 
-volumes:
-  redis_data:
+Set backend allowlist explicitly:
+
+```env
+CORS_ORIGINS=https://app.yourdomain.com
 ```
 
-### Run Production
-```bash
-# Build and start
-docker-compose -f docker-compose.prod.yml up -d
+For local development include local origins:
 
-# Check logs
-docker-compose -f docker-compose.prod.yml logs -f
+```env
+CORS_ORIGINS=http://localhost:5173,http://localhost:8000
 ```
 
-## Step 6: Configure Real-time Features
+## 7) Operational Checks
 
-### Enable Realtime
-1. Go to Supabase Dashboard → Database → Replication
-2. **Enable tables**:
-   - `users`
-   - `sessions` 
-   - `coding_events`
-   - `evaluations`
-3. **Configure Row Level Security**:
-   ```sql
-   -- Users can only see their own data
-   CREATE POLICY "Users can view own data" ON users
-   FOR SELECT USING (auth.uid() = id::text);
-   
-   -- Sessions for interview participants
-   CREATE POLICY "Session access" ON sessions
-   FOR SELECT USING (
-     recruiter_id = auth.uid()::text OR 
-     EXISTS (SELECT 1 FROM participants WHERE session_id = sessions.id AND user_id = auth.uid()::text)
-   );
-   ```
+Validate quickly:
 
-### Set up Storage
-1. Go to Storage → Settings
-2. **Create buckets**:
-   - `recordings` (interview videos)
-   - `files` (code snapshots, documents)
-3. **Configure CORS**:
-   - Add your domain to allowed origins
-   - Set appropriate bucket policies
-
-## Step 7: Configure LiveKit Integration
-
-### Option A: Supabase Edge Functions (Recommended)
-```javascript
-// supabase/functions/livekit/index.js
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-
-serve(async (req) => {
-  // LiveKit token generation logic
-  const { room, identity } = await req.json()
-  
-  const token = await generateLiveKitToken(room, identity)
-  
-  return new Response(JSON.stringify({ token }), {
-    headers: { 'Content-Type': 'application/json' },
-  })
-})
+```powershell
+Invoke-WebRequest -UseBasicParsing http://localhost:8000/health
+Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/info
 ```
 
-### Option B: External LiveKit
-```bash
-# Keep existing LiveKit configuration
-LIVEKIT_API_KEY=your-key
-LIVEKIT_API_SECRET=your-secret
-LIVEKIT_WS_URL=wss://your-project.livekit.cloud
-```
+Auth check path:
 
-## Step 8: Monitor and Scale
+1. `POST /api/auth/login`
+2. call `GET /api/auth/me` with access token
 
-### Health Checks
-```bash
-# Application health
-curl https://your-domain.com/health
+## 8) Security Recommendations
 
-# Expected response
-{
-  "status": "healthy",
-  "environment": "production",
-  "database": "connected",
-  "redis": "connected"
-}
-```
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` to frontend.
+- Keep anon key in frontend only where required.
+- Rotate credentials periodically.
+- Audit auth-related logs for repeated unauthorized access patterns.
 
-### Monitoring
-- **Supabase Dashboard**: Database usage, API calls
-- **Application Logs**: Structured logging with log levels
-- **Performance Metrics**: Response times, error rates
-
-### Scaling
-```bash
-# Scale workers
-docker-compose -f docker-compose.prod.yml up -d --scale worker=3
-
-# Add load balancer
-# Use nginx, AWS ALB, or Cloudflare
-```
-
-## Step 9: Security Configuration
-
-### Environment Security
-```bash
-# Use HTTPS only
-CORS_ORIGINS=https://your-domain.com
-
-# Enable rate limiting
-RATE_LIMIT_PER_MINUTE=60
-```
-
-### Database Security
-```sql
--- Row Level Security policies
-CREATE POLICY "Enable insert for authenticated users only" ON users
-FOR INSERT WITH CHECK (auth.role() = 'authenticated');
-
-CREATE POLICY "Enable update for own data" ON sessions
-FOR UPDATE USING (recruiter_id = auth.uid()::text);
-```
-
-## Step 10: Backup and Recovery
-
-### Automatic Backups
-- **Supabase**: Daily backups, point-in-time recovery
-- **Application logs**: Export to external logging service
-- **Database dumps**: Weekly for additional safety
-
-### Disaster Recovery
-```bash
-# Restore from backup
-supabase db restore --backup-id backup_123
-
-# Failover to secondary region
-# Configure in Supabase Dashboard
-```
-
-## Cost Optimization
-
-### Supabase Pricing (as of 2024)
-- **Free Tier**: 500MB DB, 1GB Storage, 50k API calls
-- **Pro Tier**: $25/month - 8GB DB, 100GB Storage, 500k API calls
-
-### Optimization Tips
-1. **Use Edge Functions** for compute-heavy tasks
-2. **Enable CDN** for static assets
-3. **Optimize queries** with proper indexing
-4. **Monitor usage** to prevent overage charges
-
-## Troubleshooting
-
-### Common Issues
-1. **Connection timeouts**: Check network policies
-2. **Auth failures**: Verify API keys and RLS policies
-3. **Real-time not working**: Enable replication on tables
-4. **Storage errors**: Check bucket permissions
-
-### Debug Mode
-```bash
-# Enable debug logging
-LOG_LEVEL=DEBUG
-
-# Check Supabase logs
-supabase logs --project-id your-project-id
-```
-
-## Migration Checklist
-
-- [ ] Supabase project created
-- [ ] Environment variables configured
-- [ ] Database migrations run
-- [ ] Real-time enabled on tables
-- [ ] Storage buckets created
-- [ ] Row Level Security policies set
-- [ ] SSL certificates configured
-- [ ] Monitoring set up
-- [ ] Backup strategy implemented
-- [ ] Load testing completed
-- [ ] Security audit performed
-
-## Support
-
-- **Supabase Docs**: https://supabase.com/docs
-- **Community**: https://github.com/supabase/supabase/discussions
-- **Status Page**: https://status.supabase.com
-
-Your Neeti AI platform is now production-ready with Supabase!
+Last updated: 2026-04-07

@@ -18,13 +18,20 @@ class Settings(BaseSettings):
     )
     
     APP_NAME: str = "Neeti AI"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.1.0"
     DEBUG: bool = False
     ENVIRONMENT: str = "production"
     
     HOST: str = "0.0.0.0"
     PORT: int = 8000
     WORKERS: int = 4
+
+    DATABASE_URL: Optional[str] = None
+    POSTGRES_USER: Optional[str] = None
+    POSTGRES_PASSWORD: Optional[str] = None
+    POSTGRES_HOST: str = "postgres"
+    POSTGRES_PORT: int = 5432
+    POSTGRES_DB: str = "interview_platform"
     
     SUPABASE_URL: Optional[str] = None
     SUPABASE_ANON_KEY: Optional[str] = None
@@ -124,6 +131,9 @@ class Settings(BaseSettings):
     
     MAX_SESSION_DURATION_MINUTES: int = 120
     SESSION_RECORDING_ENABLED: bool = True
+    
+    # Hackathon demo mode — enables mock data and relaxed validation
+    DEMO_MODE: bool = False
 
 @lru_cache()
 def get_settings() -> Settings:

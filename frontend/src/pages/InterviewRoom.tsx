@@ -7,8 +7,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useWebSocket } from '../lib/websocket';
 import { CodeEditor } from '../components/CodeEditor';
 import { Button } from '../components/Button';
-import { StatusIndicator } from '../components/StatusIndicator';
-import { LogOut, Code, Maximize2, Minimize2, FileText, Clock, AlertTriangle } from 'lucide-react';
+import { LogOut, Code, Maximize2, Minimize2, FileText, Clock, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 
 const LIVEKIT_WS_URL = import.meta.env.VITE_LIVEKIT_WS_URL;
 
@@ -42,7 +41,10 @@ export const InterviewRoom: React.FC = () => {
   if (!currentSession || !roomToken) {
     return (
       <div className="min-h-screen bg-neeti-bg flex items-center justify-center">
-        <p className="text-ink-ghost text-sm">Loading interview room…</p>
+        <div className="flex flex-col items-center gap-4 animate-fade-in">
+          <div className="w-10 h-10 border-2 border-bronze border-t-transparent rounded-full animate-spin" />
+          <p className="text-ink-ghost text-sm font-mono">Connecting to interview room…</p>
+        </div>
       </div>
     );
   }
@@ -67,17 +69,27 @@ export const InterviewRoom: React.FC = () => {
               </div>
             </div>
 
+            {/* Recording indicator */}
+            <div className="rec-indicator">
+              <span className="rec-dot" />
+              <span className="text-[10px] font-mono font-semibold text-status-critical tracking-wider">REC</span>
+            </div>
+
             <div className="flex items-center gap-1.5 text-xs text-ink-tertiary">
               <Clock className="w-3.5 h-3.5" />
-              <span className="font-mono tabular-nums">{fmt(elapsedTime)}</span>
+              <span className="font-mono tabular-nums text-sm font-semibold text-ink-primary">{fmt(elapsedTime)}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <StatusIndicator status={isConnected ? 'success' : 'critical'} size="sm" />
-              <span className="text-[10px] uppercase tracking-wider text-ink-ghost">
-                {isConnected ? 'Connected' : 'Connecting'}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-neeti-border bg-neeti-surface">
+              {isConnected ? (
+                <Wifi className="w-3.5 h-3.5 text-status-success" />
+              ) : (
+                <WifiOff className="w-3.5 h-3.5 text-status-critical" />
+              )}
+              <span className="text-[10px] uppercase tracking-wider text-ink-ghost font-mono">
+                {isConnected ? 'Connected' : 'Reconnecting'}
               </span>
             </div>
 
@@ -94,7 +106,7 @@ export const InterviewRoom: React.FC = () => {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <div className={`${isCodeExpanded ? 'w-1/2' : 'w-2/3'} border-r border-neeti-border flex flex-col transition-all`}>
+        <div className={`${isCodeExpanded ? 'w-1/2' : 'w-2/3'} border-r border-neeti-border flex flex-col transition-all duration-300`}>
           <div className="flex-1 p-3">
             <LiveKitRoom token={roomToken} serverUrl={LIVEKIT_WS_URL} connectOptions={{ autoSubscribe: true }}>
               <VideoConference className="h-full" />
@@ -110,7 +122,10 @@ export const InterviewRoom: React.FC = () => {
                   currentSession.status === 'live'
                     ? 'bg-status-critical/10 text-status-critical border-status-critical/20'
                     : 'bg-neeti-elevated text-ink-secondary border-neeti-border'
-                }`}>{currentSession.status}</span>
+                }`}>
+                  {currentSession.status === 'live' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-status-critical animate-pulse mr-1 align-middle" />}
+                  {currentSession.status}
+                </span>
               </div>
               <div className="flex items-center gap-2 text-ink-ghost">
                 <span>Language:</span>
@@ -120,7 +135,7 @@ export const InterviewRoom: React.FC = () => {
           </div>
         </div>
 
-        <div className={`${isCodeExpanded ? 'w-1/2' : 'w-1/3'} flex flex-col transition-all`}>
+        <div className={`${isCodeExpanded ? 'w-1/2' : 'w-1/3'} flex flex-col transition-all duration-300`}>
           <div className="border-b border-neeti-border bg-neeti-surface/60 px-4 py-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -149,6 +164,10 @@ export const InterviewRoom: React.FC = () => {
             <div className="flex items-center gap-4 text-[10px] text-ink-ghost">
               <span>Lines: <span className="font-mono text-ink-secondary">{currentCode.split('\n').length}</span></span>
               <span>Lang: <span className="font-mono text-ink-secondary">{language.toUpperCase()}</span></span>
+              <span className="ml-auto">
+                <span className="w-1.5 h-1.5 rounded-full bg-status-success inline-block mr-1 align-middle animate-pulse-dot" />
+                AI Monitoring Active
+              </span>
             </div>
           </div>
         </div>

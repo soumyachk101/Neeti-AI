@@ -2,9 +2,10 @@
 Main FastAPI application.
 Production-grade configuration with proper lifecycle management.
 """
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 
@@ -44,15 +45,76 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# ── FIX #7: Restrict CORS methods and headers for production ──
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Authorization",
+        "Content-Type",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+    ],
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# ── FIX #4: Rate limiting middleware using Redis ──
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """
+    Simple sliding-window rate limiter using Redis.
+    Limits per IP to RATE_LIMIT_PER_MINUTE requests/minute.
+    Skips rate limiting if Redis is unavailable.
+    """
+    # Skip rate limiting for health/root endpoints and WebSocket upgrades
+    if request.url.path in ("/", "/health", "/api/info") or request.url.path.startswith("/ws"):
+        return await call_next(request)
+
+    try:
+        if redis_client.client:
+            client_ip = request.client.host if request.client else "unknown"
+            key = f"ratelimit:{client_ip}:{int(time.time()) // 60}"
+            
+            current = await redis_client.client.incr(key)
+            if current == 1:
+                await redis_client.client.expire(key, 60)
+            
+            limit = settings.RATE_LIMIT_PER_MINUTE
+            if current > limit:
+                logger.warning(f"Rate limit exceeded for {client_ip}: {current}/{limit}")
+                return Response(
+                    content='{"detail": "Too many requests. Please slow down."}',
+                    status_code=429,
+                    media_type="application/json",
+                    headers={"Retry-After": "60"},
+                )
+    except Exception:
+        # Redis unavailable — skip rate limiting gracefully
+        pass
+
+    return await call_next(request)
+
+
+# ── Request logging middleware ──
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    """Log request timing in development/staging."""
+    start = time.time()
+    response = await call_next(request)
+    duration_ms = (time.time() - start) * 1000
+
+    if settings.DEBUG or settings.ENVIRONMENT != "production":
+        logger.info(
+            f"{request.method} {request.url.path} → {response.status_code} ({duration_ms:.1f}ms)"
+        )
+
+    return response
+
 
 app.include_router(supabase_auth.router, prefix="/api")
 app.include_router(sessions.router, prefix="/api")

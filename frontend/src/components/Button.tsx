@@ -19,7 +19,7 @@ export const Button: React.FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const base = 'inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neeti-bg rounded-md active:scale-[0.97]';
+  const base = 'btn-ripple inline-flex items-center justify-center font-medium transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-neeti-bg rounded-md active:scale-[0.97]';
 
   const variants = {
     primary:   'bg-bronze hover:bg-bronze-light text-white border border-bronze hover:border-bronze-light shadow-glow focus:ring-bronze/30',

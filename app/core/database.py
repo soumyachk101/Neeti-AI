@@ -22,8 +22,7 @@ def get_database_url() -> str:
     Handles various DATABASE_URL formats from cloud providers
     (Railway, Supabase, Heroku) and converts them to asyncpg format.
     """
-    import os
-    db_url = os.getenv("DATABASE_URL")
+    db_url = settings.DATABASE_URL
     if db_url:
         # Convert postgres:// or postgresql:// to postgresql+asyncpg://
         if db_url.startswith("postgres://"):
@@ -34,11 +33,20 @@ def get_database_url() -> str:
             db_url = f"postgresql+asyncpg://{db_url}"
         return db_url
     
-    postgres_user = os.getenv("POSTGRES_USER", "interview_user")
-    postgres_password = os.getenv("POSTGRES_PASSWORD", "changeme")
-    postgres_host = os.getenv("POSTGRES_HOST", "postgres")
-    postgres_port = os.getenv("POSTGRES_PORT", "5432")
-    postgres_db = os.getenv("POSTGRES_DB", "interview_platform")
+    postgres_user = settings.POSTGRES_USER
+    postgres_password = settings.POSTGRES_PASSWORD
+    postgres_host = settings.POSTGRES_HOST
+    postgres_port = settings.POSTGRES_PORT
+    postgres_db = settings.POSTGRES_DB
+
+    if settings.ENVIRONMENT == "development" and postgres_host == "postgres":
+        postgres_host = "localhost"
+    
+    if not postgres_user or not postgres_password:
+        raise ValueError(
+            "Database credentials not configured. "
+            "Set DATABASE_URL or POSTGRES_USER + POSTGRES_PASSWORD env vars."
+        )
     
     return f"postgresql+asyncpg://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}"
 
@@ -63,12 +71,12 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency for getting database sessions.
-    Properly handles session lifecycle and cleanup.
+    Routes manage their own commits — this dependency only handles
+    rollback on error and cleanup.
     """
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
         except Exception as e:
             await session.rollback()
             logger.error(f"Database session error: {e}")

@@ -6,7 +6,7 @@ import secrets
 from datetime import datetime
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
@@ -61,7 +61,12 @@ async def create_session(
         )
         logger.info(f"LiveKit room created: {room_name}")
     except Exception as e:
+        # FIX #12: Fail the request instead of creating a broken session
         logger.error(f"Failed to create LiveKit room {room_name}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Video conferencing service is currently unavailable. Please try again later."
+        )
     
     new_session = Session(
         session_code=session_code,
@@ -71,7 +76,7 @@ async def create_session(
         status=SessionStatus.SCHEDULED,
         scheduled_at=session_data.scheduled_at,
         room_name=room_name,
-        metadata=session_data.metadata
+        meta_data=session_data.metadata
     )
     
     db.add(new_session)
@@ -233,13 +238,16 @@ async def get_room_token(
         participant_identity=participant_identity
     )
 
+# FIX #13: Added pagination to session list
 @router.get("", response_model=List[SessionResponse])
 async def list_sessions(
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
-    status_filter: SessionStatus = None
+    status_filter: SessionStatus = None,
+    limit: int = Query(default=50, le=200, ge=1),
+    offset: int = Query(default=0, ge=0),
 ) -> List[Session]:
-    """List sessions for current user."""
+    """List sessions for current user (paginated, max 200 per page)."""
     
     from app.models.models import UserRole
     
@@ -255,7 +263,7 @@ async def list_sessions(
     if status_filter:
         query = query.where(Session.status == status_filter)
     
-    query = query.order_by(Session.created_at.desc())
+    query = query.order_by(Session.created_at.desc()).limit(limit).offset(offset)
     
     result = await db.execute(query)
     sessions = result.scalars().all()

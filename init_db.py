@@ -1,6 +1,9 @@
 """
 Database initialization script.
-Creates initial database schema and optional seed data.
+Creates initial database schema and applies migrations.
+
+NOTE: User management is handled by Supabase Auth.
+No seed users are created — admins are provisioned via Supabase dashboard.
 """
 import asyncio
 import sys
@@ -8,11 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.core.database import init_db, AsyncSessionLocal, engine
+from app.core.database import init_db, engine
 from app.core.config import settings
 from app.core.logging import logger
-from app.models.models import User, UserRole
-from app.core.auth import AuthService
 from sqlalchemy import text
 
 async def apply_migrations():
@@ -38,46 +39,15 @@ async def apply_migrations():
             except Exception as e:
                 logger.warning(f"Migration {migration_file.name} skipped (may already be applied): {e}")
 
-async def create_admin_user():
-    """Create default admin user if not exists."""
-    async with AsyncSessionLocal() as db:
-        from sqlalchemy import select
-        
-        result = await db.execute(
-            select(User).where(User.email == "admin@example.com")
-        )
-        existing_admin = result.scalar_one_or_none()
-        
-        if existing_admin:
-            logger.info("Admin user already exists")
-            return
-        
-        admin = User(
-            email="admin@example.com",
-            full_name="System Administrator",
-            role=UserRole.ADMIN,
-            hashed_password=AuthService.hash_password("admin123"),
-            is_active=True
-        )
-        
-        db.add(admin)
-        await db.commit()
-        
-        logger.info("Admin user created: admin@example.com / admin123")
-        logger.warning("CHANGE THE DEFAULT PASSWORD IN PRODUCTION!")
-
 async def main():
-    """Initialize database and create seed data."""
+    """Initialize database and apply migrations."""
     logger.info("Initializing database...")
     
     await init_db()
-    
     await apply_migrations()
     
-    if settings.ENVIRONMENT != "production":
-        await create_admin_user()
-    
     logger.info("Database initialization complete!")
+    logger.info("NOTE: User accounts are managed via Supabase Auth dashboard.")
 
 if __name__ == "__main__":
     asyncio.run(main())
