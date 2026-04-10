@@ -16,6 +16,10 @@ import {
 } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { Footer } from '../components/Footer';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
+import { SplineScene } from "@/components/ui/splite";
+import { Card } from "@/components/ui/card";
+import { Spotlight } from "@/components/ui/spotlight";
 
 const AGENTS = [
   { name: 'Coding Agent', status: 'active' as const },
@@ -80,7 +84,7 @@ const TECH_STACK = [
   { icon: Shield, label: 'Supabase Auth' },
 ];
 
-// Typewriter hook
+// Typewriter hook and isolated component for performance
 function useTypewriter(text: string, speed = 50, delay = 600) {
   const [displayed, setDisplayed] = useState('');
   const [done, setDone] = useState(false);
@@ -105,36 +109,22 @@ function useTypewriter(text: string, speed = 50, delay = 600) {
   return { displayed, done };
 }
 
-export const Landing = () => {
-  const { displayed: typedText, done: typingDone } = useTypewriter(
-    'Evidence-based hiring decisions powered by five autonomous AI agents.',
-    30,
-    800
+function TypewriterText({ text, className }: { text: string; className?: string }) {
+  const { displayed, done } = useTypewriter(text, 30, 800);
+  return (
+    <p className={className}>
+      {displayed}
+      {!done && <span className="typewriter-cursor" />}
+    </p>
   );
+}
+
+export const Landing = () => {
 
   return (
-    <div className="min-h-screen bg-neeti-bg relative overflow-hidden">
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.012]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(194,112,42,.4) 1px,transparent 1px), linear-gradient(90deg,rgba(194,112,42,.4) 1px,transparent 1px)',
-          backgroundSize: '72px 72px',
-        }}
-      />
-
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(194,112,42,.06),transparent)]" />
-
-      <div className="ambient-orb ambient-orb-bronze w-[600px] h-[600px] top-[-10%] right-[-5%] z-0 opacity-70" />
-      <div className="ambient-orb ambient-orb-blue w-[500px] h-[500px] bottom-[10%] left-[-8%] z-0 opacity-50" />
-      <div className="ambient-orb ambient-orb-warm w-[400px] h-[400px] top-[40%] right-[15%] z-0 opacity-40" />
-
-      {/* Floating particles */}
-      <div className="floating-particles z-0">
-        <span /><span /><span /><span /><span /><span /><span /><span />
-      </div>
-
-      <div className="relative z-10">
+    <div className="relative flex w-full flex-col min-h-screen overflow-hidden">
+      
+      <div className="relative z-10 w-full">
         <header className="glass-header sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
               <Logo size="md" showWordmark showTagline linkTo="/" />
@@ -162,80 +152,59 @@ export const Landing = () => {
           </div>
         </header>
 
-        <section className="max-w-7xl mx-auto px-6 pt-20 pb-28 lg:pt-28 lg:pb-36">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div className="space-y-8">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-bronze/25 bg-bronze/[0.08] backdrop-blur-md rounded-full stagger-1">
-                <Shield className="w-3.5 h-3.5 text-bronze" />
-                <span className="text-xs font-mono text-bronze tracking-wider">
-                  TECHNICAL ASSESSMENT v2.1
-                </span>
+        <section className="relative flex flex-col items-center justify-center pt-24 pb-20 px-6 max-w-7xl mx-auto w-full transition-all duration-500">
+          <Card className="w-full min-h-[600px] bg-black/[0.80] backdrop-blur-md relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
+            <Spotlight size={800} />
+            
+            <div className="flex flex-col lg:flex-row h-full min-h-[600px]">
+              {/* Left content */}
+              <div className="flex-1 p-8 md:p-14 relative z-10 flex flex-col justify-center">
+                <div className="inline-flex flex-shrink-0 items-center gap-2 px-3 py-1.5 border border-bronze/25 bg-bronze/[0.08] rounded-full mb-8 w-fit select-none">
+                  <Shield className="w-3.5 h-3.5 text-bronze" />
+                  <span className="text-xs font-mono text-bronze tracking-wider">
+                    TECHNICAL ASSESSMENT v2.1
+                  </span>
+                </div>
+                
+                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1] mb-6">
+                  <span className="text-white">Evidence-Based</span> <br />
+                  <span className="text-gradient-bronze">Technical Judgment</span>
+                </h1>
+                
+                <TypewriterText 
+                  text="Evidence-based hiring decisions powered by five autonomous AI agents."
+                  className="text-white/60 text-base md:text-lg max-w-lg mb-4 min-h-[3.5rem]" 
+                />
+                
+                <div className="mb-10 flex flex-shrink-0 items-center gap-2 select-none">
+                    <span className="relative flex h-3 w-3 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75"></span>
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500"></span>
+                    </span>
+                    <p className="text-xs font-medium tracking-wide text-green-500 uppercase">System Online • Ready for Interviews</p>
+                </div>
+                    
+                <div className="flex flex-col sm:flex-row items-start gap-4"> 
+                    <Link to="/register">
+                      <LiquidButton className="text-white border border-white/20" size={'xl'}>
+                        Initiate Evaluation <ArrowRight className="w-4 h-4 ml-2" />
+                      </LiquidButton> 
+                    </Link>
+                </div> 
               </div>
 
-              <h2 className="text-5xl lg:text-[3.5rem] xl:text-6xl font-display font-bold text-ink-primary leading-[1.08] tracking-tight stagger-2">
-                Evidence-Based
-                <br />
-                <span className="text-gradient-bronze">Technical Judgment</span>
-              </h2>
-
-              <div className="stagger-3">
-                <p className="text-lg text-ink-secondary leading-relaxed max-w-xl h-[3.5rem]">
-                  {typedText}
-                  {!typingDone && <span className="typewriter-cursor" />}
-                </p>
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-3 pt-2 stagger-4">
-                <Link to="/register" className="group">
-                  <button className="btn-shimmer w-full sm:w-auto px-8 py-3.5 bg-bronze hover:bg-bronze-light text-white font-medium rounded-md transition-all duration-200 flex items-center justify-center gap-2 shadow-glow hover:shadow-glow-strong active:scale-[0.97]">
-                    Initiate Evaluation
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </button>
-                </Link>
-                <Link to="/login">
-                  <button className="w-full sm:w-auto px-8 py-3.5 border border-neeti-border hover:border-bronze/40 bg-neeti-surface text-ink-primary font-medium rounded-md transition-all duration-200">
-                    System Login
-                  </button>
-                </Link>
-              </div>
-
-              <div className="flex items-center gap-6 pt-2 text-sm text-ink-tertiary stagger-5">
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-bronze" strokeWidth={2} />
-                  Multi-agent analysis
-                </span>
-                <span className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-bronze" strokeWidth={2} />
-                  Real-time execution
-                </span>
-                <span className="hidden sm:inline-flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-bronze" strokeWidth={2} />
-                  Evidence-backed
-                </span>
+              {/* Right content - The Robot Spline Scene */}
+              <div className="flex-1 relative min-h-[400px] lg:min-h-full flex items-center justify-center pb-8 lg:pb-0 mix-blend-screen">
+                <SplineScene 
+                  scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                  className="w-full h-full object-cover select-none"
+                />
               </div>
             </div>
-
-            <div className="hidden lg:block space-y-6 stagger-6">
-              <TechnicalBlueprint showScanLine />
-
-              <div className="glass-medium p-5 space-y-3">
-                <p className="text-[10px] font-mono text-ink-ghost tracking-[0.2em] uppercase mb-3">
-                  Agent Status
-                </p>
-                {AGENTS.map((a, i) => (
-                  <div key={a.name} className={`flex items-center justify-between stagger-${Math.min(i + 3, 8)}`}>
-                    <span className="text-sm font-mono text-ink-secondary">{a.name}</span>
-                    <StatusIndicator
-                      status={a.status}
-                      label={a.status === 'active' ? 'READY' : 'STANDBY'}
-                      showPulse={a.status === 'active'}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          </Card>
         </section>
+
+
 
         {/* Tech stack trust bar */}
         <ScrollReveal variant="fade-in" duration={800}>
@@ -252,43 +221,47 @@ export const Landing = () => {
           </section>
         </ScrollReveal>
 
-        <section className="border-b border-white/[0.06] bg-white/[0.02] backdrop-blur-sm py-24">
-          <div className="max-w-7xl mx-auto px-6">
-            <ScrollReveal variant="fade-up">
-              <div className="text-center mb-16">
-                <h3 className="text-3xl font-display font-bold text-ink-primary mb-3">
-                  Evaluation Infrastructure
-                </h3>
-                <p className="text-ink-secondary max-w-2xl mx-auto">
-                  A comprehensive technical assessment framework built on measurable
-                  criteria and automated analysis.
-                </p>
-              </div>
-            </ScrollReveal>
+        <section className="py-24 max-w-7xl mx-auto px-6">
+          <ScrollReveal variant="fade-up" duration={800}>
+            <Card className="w-full relative overflow-hidden backdrop-blur-md bg-black/[0.60] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 md:p-14 transition-all duration-500 hover:shadow-bronze/10 hover:border-bronze/30 group">
+              <Spotlight size={800} />
+              
+              <div className="relative z-10">
+                <div className="text-center mb-16">
+                  <h3 className="text-3xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-400 mb-4 tracking-tight">
+                    Evaluation Infrastructure
+                  </h3>
+                  <p className="text-white/60 max-w-2xl mx-auto md:text-lg">
+                    A comprehensive technical assessment framework built on measurable
+                    criteria and automated analysis.
+                  </p>
+                </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {CAPABILITIES.map((cap, i) => (
-                <ScrollReveal key={cap.tag} variant="fade-up" delay={i * 100}>
-                  <div
-                    className="glass-subtle p-7 group hover:bg-white/[0.06] transition-all duration-300 hover:-translate-y-1"
-                  >
-                    <div className="mb-5 relative inline-flex items-center justify-center w-12 h-12 rounded-md bg-bronze/[0.07] group-hover:bg-bronze/[0.12] transition-colors">
-                      <cap.icon className="w-6 h-6 text-bronze" strokeWidth={1.5} />
-                    </div>
-                    <h4 className="text-base font-display font-semibold text-ink-primary mb-2">
-                      {cap.title}
-                    </h4>
-                    <p className="text-sm text-ink-secondary leading-relaxed mb-4">
-                      {cap.desc}
-                    </p>
-                    <span className="text-[10px] font-mono text-ink-ghost tracking-[0.15em]">
-                      MODULE: {cap.tag}
-                    </span>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                  {CAPABILITIES.map((cap, i) => (
+                    <ScrollReveal key={cap.tag} variant="fade-up" delay={i * 100}>
+                      <div
+                        className="h-full bg-white/[0.03] border border-white/[0.05] rounded-2xl p-6 hover:bg-white/[0.08] hover:border-bronze/30 hover:-translate-y-2 transition-all duration-300 flex flex-col items-start group/card cursor-default"
+                      >
+                        <div className="mb-6 relative flex items-center justify-center w-12 h-12 rounded-xl bg-bronze/10 group-hover/card:bg-bronze/20 transition-colors">
+                          <cap.icon className="w-6 h-6 text-bronze transform group-hover/card:scale-110 group-hover/card:rotate-3 transition-transform duration-300" strokeWidth={1.5} />
+                        </div>
+                        <h4 className="text-lg font-display font-semibold text-white/90 mb-3 group-hover/card:text-white transition-colors">
+                          {cap.title}
+                        </h4>
+                        <p className="text-sm text-white/50 leading-relaxed mb-6 flex-grow">
+                          {cap.desc}
+                        </p>
+                        <span className="text-[10px] font-mono text-bronze/70 tracking-[0.2em] mt-auto uppercase bg-bronze/10 px-2 py-1 rounded-md">
+                          MOD: {cap.tag}
+                        </span>
+                      </div>
+                    </ScrollReveal>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </ScrollReveal>
         </section>
 
         <section className="max-w-7xl mx-auto px-6 py-24">
