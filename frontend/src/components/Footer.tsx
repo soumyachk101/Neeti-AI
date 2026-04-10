@@ -8,7 +8,10 @@ import {
   ExternalLink,
   Shield,
   Activity,
+  ChevronRight,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { FlickeringGrid } from './ui/flickering-grid';
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -23,7 +26,7 @@ const PLATFORM_LINKS = [
 const RESOURCE_LINKS = [
   { label: 'FAQ', to: '/faq' },
   { label: 'Troubleshooting', to: '/troubleshooting' },
-  { label: 'API Reference', to: '/about#api', external: false },
+  { label: 'API Reference', to: '/about#api' },
   { label: 'Documentation', href: 'https://github.com/sukrit-89/Anti-cheat-interview-system', external: true },
   { label: 'Release Notes', href: 'https://github.com/sukrit-89/Anti-cheat-interview-system/releases', external: true },
 ];
@@ -37,184 +40,172 @@ const LEGAL_LINKS = [
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="relative border-t border-white/[0.08]">
-      <div className="absolute inset-0 bg-gradient-to-t from-neeti-surface/60 via-transparent to-transparent pointer-events-none" />
+    <footer className="relative w-full bg-[#030303] overflow-hidden border-t border-white/[0.05]">
+      {/* Flickering Grid Background */}
+      <div className="absolute inset-0 z-0">
+        <FlickeringGrid 
+          squareSize={4}
+          gridGap={6}
+          flickerChance={0.2}
+          color="rgb(181, 146, 88)" 
+          maxOpacity={0.15}
+          className="opacity-40"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-transparent to-[#030303]/80" />
+      </div>
 
-      <div className="relative z-10">
-        <div className="max-w-7xl mx-auto px-6 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 lg:gap-8">
-            <div className="lg:col-span-4 space-y-5">
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        {/* Main Footer Content */}
+        <div className="py-20 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8">
+          
+          {/* Brand Column */}
+          <div className="lg:col-span-4 space-y-8">
+            <div className="inline-block group cursor-pointer">
               <Logo size="lg" showWordmark showTagline linkTo="/" />
-
-              <p className="text-sm text-ink-secondary leading-relaxed max-w-sm">
-                Neeti AI is an evidence-based technical interview evaluation platform.
-                Multi-agent AI analysis provides comprehensive, bias-aware assessments
-                backed by measurable evidence and real-time code execution.
-              </p>
-
-              <div className="flex items-center gap-2 mt-4">
-                <div className="flex items-center gap-1.5 px-2.5 py-1 border border-status-success/30 bg-status-success/[0.08] rounded-full">
-                  <Activity className="w-3 h-3 text-status-success" />
-                  <span className="text-[10px] font-mono text-status-success tracking-wider">
-                    ALL SYSTEMS OPERATIONAL
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <a
-                  href="https://github.com/sukrit-89"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-md border border-neeti-border hover:border-bronze/40 bg-neeti-surface hover:bg-neeti-elevated text-ink-tertiary hover:text-bronze transition-all duration-200"
-                  aria-label="GitHub"
-                >
-                  <Github className="w-4 h-4" />
-                </a>
-                <a
-                  href="https://x.com/sukritmotion"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-md border border-neeti-border hover:border-bronze/40 bg-neeti-surface hover:bg-neeti-elevated text-ink-tertiary hover:text-bronze transition-all duration-200"
-                  aria-label="Twitter"
-                >
-                  <Twitter className="w-4 h-4" />
-                </a>
-                <a
-                  href="https://www.linkedin.com/in/sukrit-goswami-5558a5321"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 rounded-md border border-neeti-border hover:border-bronze/40 bg-neeti-surface hover:bg-neeti-elevated text-ink-tertiary hover:text-bronze transition-all duration-200"
-                  aria-label="LinkedIn"
-                >
-                  <Linkedin className="w-4 h-4" />
-                </a>
-                <a
-                  href="mailto:neetiatsuuport@gmail.com"
-                  className="p-2 rounded-md border border-neeti-border hover:border-bronze/40 bg-neeti-surface hover:bg-neeti-elevated text-ink-tertiary hover:text-bronze transition-all duration-200"
-                  aria-label="Email"
-                >
-                  <Mail className="w-4 h-4" />
-                </a>
-              </div>
+              <div className="h-px w-0 group-hover:w-full bg-bronze transition-all duration-500 mt-1" />
             </div>
 
-            <div className="lg:col-span-2 lg:col-start-6">
-              <h4 className="text-[10px] font-mono text-ink-ghost tracking-[0.2em] uppercase mb-5">
-                Platform
-              </h4>
-              <ul className="space-y-3">
-                {PLATFORM_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      to={link.to}
-                      className="text-sm text-ink-secondary hover:text-ink-primary hover:translate-x-0.5 transition-all duration-200 inline-block"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
+            <p className="text-sm text-white/50 leading-relaxed max-w-sm font-light">
+              Advancing technical assessment through autonomous, evidence-backed evaluation protocols. Neeti AI ensures integrity and depth in the digital age.
+            </p>
+
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-emerald-500/20 bg-emerald-500/5 rounded-full">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">
+                  Nodes Online
+                </span>
+              </div>
+              <div className="h-4 w-px bg-white/10" />
+              <div className="flex gap-4">
+                {[
+                  { icon: Github, href: "https://github.com/sukrit-89" },
+                  { icon: Twitter, href: "https://x.com/sukritmotion" },
+                  { icon: Linkedin, href: "https://www.linkedin.com/in/sukrit-goswami-5558a5321" }
+                ].map((social, i) => (
+                  <motion.a
+                    key={i}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1, translateY: -2 }}
+                    className="text-white/30 hover:text-bronze transition-colors"
+                  >
+                    <social.icon className="w-5 h-5" />
+                  </motion.a>
                 ))}
-              </ul>
+              </div>
             </div>
+          </div>
 
-            <div className="lg:col-span-3">
-              <h4 className="text-[10px] font-mono text-ink-ghost tracking-[0.2em] uppercase mb-5">
-                Resources
-              </h4>
-              <ul className="space-y-3">
-                {RESOURCE_LINKS.map((link) =>
-                  link.external ? (
-                    <li key={link.label}>
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-ink-secondary hover:text-ink-primary transition-all duration-200 inline-flex items-center gap-1.5"
-                      >
-                        {link.label}
-                        <ExternalLink className="w-3 h-3 opacity-50" />
-                      </a>
-                    </li>
-                  ) : (
+          {/* Links Grid */}
+          <div className="lg:col-span-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+              {/* Platform */}
+              <div>
+                <h4 className="text-[11px] font-mono font-bold text-white/20 uppercase tracking-[0.3em] mb-8">
+                  / Protocol
+                </h4>
+                <ul className="space-y-4">
+                  {PLATFORM_LINKS.map((link) => (
                     <li key={link.label}>
                       <Link
-                        to={link.to!}
-                        className="text-sm text-ink-secondary hover:text-ink-primary hover:translate-x-0.5 transition-all duration-200 inline-block"
+                        to={link.to}
+                        className="group flex items-center text-sm text-white/40 hover:text-white transition-all"
                       >
-                        {link.label}
+                        <ChevronRight className="w-3 h-3 text-bronze opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                        <span>{link.label}</span>
                       </Link>
                     </li>
-                  )
-                )}
-              </ul>
-            </div>
+                  ))}
+                </ul>
+              </div>
 
-            <div className="lg:col-span-3">
-              <h4 className="text-[10px] font-mono text-ink-ghost tracking-[0.2em] uppercase mb-5">
-                Legal
-              </h4>
-              <ul className="space-y-3">
-                {LEGAL_LINKS.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      to={link.to}
-                      className="text-sm text-ink-secondary hover:text-ink-primary hover:translate-x-0.5 transition-all duration-200 inline-block"
+              {/* Resources */}
+              <div>
+                <h4 className="text-[11px] font-mono font-bold text-white/20 uppercase tracking-[0.3em] mb-8">
+                  / Knowledge
+                </h4>
+                <ul className="space-y-4">
+                  {RESOURCE_LINKS.map((link) => (
+                    <li key={link.label}>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group flex items-center text-sm text-white/40 hover:text-white transition-all"
+                        >
+                          <ChevronRight className="w-3 h-3 text-bronze opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                          <span>{link.label}</span>
+                          <ExternalLink className="w-3 h-3 ml-2 opacity-20" />
+                        </a>
+                      ) : (
+                        <Link
+                          to={link.to!}
+                          className="group flex items-center text-sm text-white/40 hover:text-white transition-all"
+                        >
+                          <ChevronRight className="w-3 h-3 text-bronze opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all" />
+                          <span>{link.label}</span>
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Support & Legal */}
+              <div className="col-span-2 md:col-span-1">
+                <h4 className="text-[11px] font-mono font-bold text-white/20 uppercase tracking-[0.3em] mb-8">
+                  / Secure
+                </h4>
+                <div className="p-6 bg-white/[0.02] border border-white/[0.05] rounded-3xl space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3 h-3 text-bronze" />
+                      <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">Support</span>
+                    </div>
+                    <a
+                      href="mailto:neetiatsupport@gmail.com"
+                      className="block text-xs text-white/60 hover:text-bronze transition-colors font-mono"
                     >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-8 p-4 glass-subtle rounded-md">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className="w-4 h-4 text-bronze" />
-                  <span className="text-xs font-mono text-ink-ghost tracking-wider">
-                    SUPPORT
-                  </span>
+                      neetiatsupport@gmail.com
+                    </a>
+                  </div>
+                  
+                  <ul className="space-y-3 pt-4 border-t border-white/[0.05]">
+                    {LEGAL_LINKS.map((link) => (
+                      <li key={link.label}>
+                        <Link to={link.to} className="text-[11px] text-white/30 hover:text-white uppercase tracking-wider transition-colors">
+                          {link.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <p className="text-xs text-ink-secondary leading-relaxed">
-                  Need help? Reach out at{' '}
-                  <a
-                    href="mailto:neetiatsuuport@gmail.com"
-                    className="text-bronze hover:text-bronze-light transition-colors underline underline-offset-2"
-                  >
-                    neetiatsuuport@gmail.com
-                  </a>
-                </p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-white/[0.06]">
-          <div className="max-w-7xl mx-auto px-6 py-5 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3 text-xs text-ink-ghost font-mono tracking-wider">
-              <span>© {CURRENT_YEAR} Neeti AI. All rights reserved.</span>
-              <span className="text-bronze/20">|</span>
-              <span>EVAL_SYSTEM v2.1.0</span>
+        {/* Bottom Bar */}
+        <div className="py-10 border-t border-white/[0.05] flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2 text-[10px] font-mono text-white/20 tracking-[0.2em]">
+              <span>© {CURRENT_YEAR} NEETI AI</span>
+              <span className="w-1 h-1 rounded-full bg-white/10" />
+              <span>STABLE_RELDISP_4.2.0</span>
             </div>
+          </div>
 
-            <div className="flex items-center gap-4 text-xs text-ink-ghost font-mono tracking-wider">
-              <span className="inline-flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-status-success animate-pulse" />
-                SECURE_PROTOCOL_ACTIVE
-              </span>
-              <span className="text-bronze/20">|</span>
-              <Link
-                to="/about"
-                className="hover:text-ink-secondary transition-colors"
-              >
-                ABOUT
-              </Link>
-              <span className="text-bronze/20">|</span>
-              <Link
-                to="/faq"
-                className="hover:text-ink-secondary transition-colors"
-              >
-                FAQ
-              </Link>
+          <div className="flex items-center gap-8">
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-white/20 tracking-[0.2em] group">
+              <Shield className="w-3 h-3 group-hover:text-bronze transition-colors" />
+              <span>PROTOCOL_ENCRYPT_ACTIVE</span>
             </div>
+            <p className="text-[10px] font-mono text-white/10 tracking-[0.4em] uppercase">
+              // Technical Judgment Evidence
+            </p>
           </div>
         </div>
       </div>
@@ -223,3 +214,4 @@ export const Footer: React.FC = () => {
 };
 
 export default Footer;
+

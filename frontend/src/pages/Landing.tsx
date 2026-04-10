@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TechnicalBlueprint } from '../components/TechnicalBlueprint';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { ScrollReveal } from '../components/ScrollReveal';
@@ -20,6 +20,10 @@ import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { SplineScene } from "@/components/ui/splite";
 import { Card } from "@/components/ui/card";
 import { Spotlight } from "@/components/ui/spotlight";
+import { TechMarquee } from '@/components/ui/tech-marquee';
+import { TechOrbit } from '@/components/ui/tech-orbit';
+import { TextReveal } from '@/components/ui/text-reveal';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 const AGENTS = [
   { name: 'Coding Agent', status: 'active' as const },
@@ -119,13 +123,94 @@ function TypewriterText({ text, className }: { text: string; className?: string 
   );
 }
 
-export const Landing = () => {
+function ScrollProgressBeam({ targetRef }: { targetRef: React.RefObject<HTMLElement | null> }) {
+  const { scrollYProgress } = useScroll({
+    target: targetRef,
+    offset: ["start end", "end start"]
+  });
 
   return (
-    <div className="relative flex w-full flex-col min-h-screen overflow-hidden">
+    <motion.div 
+      className="absolute top-0 left-0 h-full bg-gradient-to-r from-transparent via-bronze to-transparent shadow-[0_0_15px_rgba(212,175,55,0.5)]"
+      style={{ width: "100%", scaleX: scrollYProgress, originX: 0, position: 'absolute' }}
+    />
+  );
+}
+
+function CinematicOrbitSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Cinematic scroll effect
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "center center"]
+  });
+
+  // Calculate transforms
+  const scale = useTransform(scrollYProgress, [0, 1], [0.8, 1]);
+  const opacity = useTransform(scrollYProgress, [0, 0.5, 1], [0, 0.5, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [100, 0]);
+
+  return (
+    <motion.section 
+      ref={containerRef}
+      style={{ opacity }}
+      className="relative py-32 overflow-hidden bg-[#0a0a0b] border-y border-white/[0.05] shadow-2xl"
+    >
+      <div className="absolute inset-0 bg-[#080809] pointer-events-none" />
       
-      <div className="relative z-10 w-full">
+      <motion.div 
+        style={{ scale, y }} 
+        className="max-w-7xl mx-auto px-6 relative z-10"
+      >
+        <TechOrbit 
+          items={TECH_STACK} 
+          radius={220}
+          speed={0.005}
+          centerContent={
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-[10px] font-mono text-bronze tracking-[0.3em] uppercase opacity-60">Engineered with</span>
+              <h4 className="text-xl font-display font-bold text-white tracking-widest uppercase">
+                Architecture
+              </h4>
+              <div className="w-12 h-0.5 bg-bronze/30 rounded-full" />
+            </div>
+          }
+        />
+      </motion.div>
+    </motion.section>
+  );
+}
+
+// Staggered grid container for capabilities/infrastructure cards
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const staggerItem = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    transition: { type: "spring", stiffness: 100, damping: 15 } 
+  },
+};
+
+export const Landing = () => {
+  const protocolRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div className="relative flex w-full flex-col min-h-screen overflow-x-hidden">
+      
+      <main className="relative z-10 w-full bg-[#030303] shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <header className="glass-header sticky top-0 z-50">
+          {/* ... existing header content ... */}
           <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
               <Logo size="md" showWordmark showTagline linkTo="/" />
 
@@ -152,6 +237,7 @@ export const Landing = () => {
           </div>
         </header>
 
+        {/* Hero Section */}
         <section className="relative flex flex-col items-center justify-center pt-24 pb-20 px-6 max-w-7xl mx-auto w-full transition-all duration-500">
           <Card className="w-full min-h-[600px] bg-black/[0.80] backdrop-blur-md relative overflow-hidden rounded-[2.5rem] border border-white/10 shadow-2xl">
             <Spotlight size={800} />
@@ -194,54 +280,49 @@ export const Landing = () => {
               </div>
 
               {/* Right content - The Robot Spline Scene */}
-              <div className="flex-1 relative min-h-[400px] lg:min-h-full flex items-center justify-center pb-8 lg:pb-0 mix-blend-screen">
-                <SplineScene 
-                  scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-                  className="w-full h-full object-cover select-none"
-                />
+              <div className="flex-1 relative min-h-[400px] lg:min-h-full flex items-center justify-center pb-8 lg:pb-0 mix-blend-screen overflow-hidden">
+                <div className="w-full h-full absolute inset-0">
+                  <SplineScene 
+                    scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
+                    className="w-full h-full object-cover select-none"
+                  />
+                </div>
               </div>
             </div>
           </Card>
         </section>
 
-
-
-        {/* Tech stack trust bar */}
-        <ScrollReveal variant="fade-in" duration={800}>
-          <section className="border-y border-white/[0.04] bg-white/[0.01] py-6">
-            <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-center gap-8 md:gap-14">
-              <span className="text-[10px] font-mono text-ink-ghost tracking-[0.2em] uppercase">Built with</span>
-              {TECH_STACK.map((tech) => (
-                <div key={tech.label} className="flex items-center gap-2 text-sm text-ink-tertiary">
-                  <tech.icon className="w-4 h-4 text-bronze/60" strokeWidth={1.5} />
-                  <span className="font-mono text-xs">{tech.label}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </ScrollReveal>
+        {/* Tech stack trust bar - Orbiting version */}
+        <CinematicOrbitSection />
 
         <section className="py-24 max-w-7xl mx-auto px-6">
-          <ScrollReveal variant="fade-up" duration={800}>
+          <ScrollReveal variant="fade-up" duration={800} threshold={0.2}>
             <Card className="w-full relative overflow-hidden backdrop-blur-md bg-black/[0.60] border border-white/10 rounded-[2.5rem] shadow-2xl p-8 md:p-14 transition-all duration-500 hover:shadow-bronze/10 hover:border-bronze/30 group">
               <Spotlight size={800} />
               
               <div className="relative z-10">
-                <div className="text-center mb-16">
-                  <h3 className="text-3xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-400 mb-4 tracking-tight">
-                    Evaluation Infrastructure
-                  </h3>
+                <div className="text-center mb-16 flex flex-col items-center">
+                  <TextReveal 
+                    text="Evaluation Infrastructure"
+                    className="text-3xl md:text-5xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-400 mb-4 tracking-tight" 
+                  />
                   <p className="text-white/60 max-w-2xl mx-auto md:text-lg">
                     A comprehensive technical assessment framework built on measurable
                     criteria and automated analysis.
                   </p>
                 </div>
 
-                <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <motion.div 
+                  className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+                  variants={staggerContainer}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: "-10%" }}
+                >
                   {CAPABILITIES.map((cap, i) => (
-                    <ScrollReveal key={cap.tag} variant="fade-up" delay={i * 100}>
+                    <motion.div key={cap.tag} variants={staggerItem}>
                       <div
-                        className="h-full bg-white/[0.03] border border-white/[0.05] rounded-2xl p-6 hover:bg-white/[0.08] hover:border-bronze/30 hover:-translate-y-2 transition-all duration-300 flex flex-col items-start group/card cursor-default"
+                        className="h-full bg-white/[0.03] border border-white/[0.05] rounded-2xl p-6 hover:bg-white/[0.08] hover:border-bronze/30 hover:-translate-y-2 transition-all duration-300 flex flex-col items-start group/card cursor-default shadow-lg"
                       >
                         <div className="mb-6 relative flex items-center justify-center w-12 h-12 rounded-xl bg-bronze/10 group-hover/card:bg-bronze/20 transition-colors">
                           <cap.icon className="w-6 h-6 text-bronze transform group-hover/card:scale-110 group-hover/card:rotate-3 transition-transform duration-300" strokeWidth={1.5} />
@@ -256,51 +337,114 @@ export const Landing = () => {
                           MOD: {cap.tag}
                         </span>
                       </div>
-                    </ScrollReveal>
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
               </div>
             </Card>
           </ScrollReveal>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-24">
-          <ScrollReveal variant="fade-up">
-            <div className="text-center mb-16">
-              <h3 className="text-3xl font-display font-bold text-ink-primary mb-3">
-                Assessment Protocol
-              </h3>
-              <p className="text-ink-secondary max-w-2xl mx-auto">
-                A rigorous three-phase evaluation process designed for technical
-                integrity and comprehensive judgment.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          <div className="grid md:grid-cols-3 gap-12">
-            {PHASES.map((phase, i) => (
-              <ScrollReveal key={phase.num} variant="fade-up" delay={i * 150}>
-                <div className="relative pl-10 group">
-                  <div className="absolute left-4 top-0 bottom-0 w-px bg-neeti-border group-last:hidden" />
-
-                  <div className="absolute left-0 top-0 w-9 h-9 flex items-center justify-center border border-bronze/30 bg-neeti-surface rounded-md text-base font-mono font-bold text-bronze">
-                    {phase.num}
-                  </div>
-
-                  <div className="pt-1">
-                    <h4 className="text-lg font-display font-semibold text-ink-primary mb-3">
-                      {phase.title}
-                    </h4>
-                    <p className="text-sm text-ink-secondary leading-relaxed mb-3">
-                      {phase.desc}
-                    </p>
-                    <span className="text-[10px] font-mono text-ink-ghost tracking-[0.15em]">
-                      PROTOCOL: {phase.tag}
-                    </span>
-                  </div>
+        <section 
+          ref={protocolRef} 
+          className="py-40 relative overflow-hidden bg-black/20"
+          style={{ position: 'relative' }}
+        >
+          {/* Advanced background elements */}
+          <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-bronze/20 to-transparent" />
+          <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-bronze/20 to-transparent" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.03)_0%,transparent_70%)] pointer-events-none" />
+          
+          <div className="max-w-7xl mx-auto px-6 relative">
+            <ScrollReveal variant="fade-up">
+              <div className="text-center mb-32">
+                <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-bronze/5 border border-bronze/20 text-[10px] font-mono font-bold text-bronze uppercase tracking-[0.3em] mb-6">
+                  <div className="w-2 h-2 rounded-full bg-bronze animate-pulse" />
+                  System Protocol v4.0.2
                 </div>
-              </ScrollReveal>
-            ))}
+                <div className="flex justify-center w-full">
+                  <TextReveal 
+                    text="Assessment Protocol"
+                    className="text-5xl md:text-7xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-b from-white via-white to-white/20 mb-8 tracking-tight"
+                  />
+                </div>
+                <p className="text-white/40 max-w-2xl mx-auto text-lg md:text-xl leading-relaxed font-light italic">
+                  "The standard for technical integrity in the age of AI."
+                </p>
+              </div>
+            </ScrollReveal>
+
+            <div className="relative" style={{ position: 'relative' }}>
+              {/* Scroll-tracked Progress Beam isolated in its own component for performance */}
+              <div className="absolute top-[4.5rem] left-0 w-full h-[2px] bg-white/5 hidden lg:block overflow-hidden">
+                <ScrollProgressBeam targetRef={protocolRef} />
+              </div>
+
+              <div className="grid lg:grid-cols-3 gap-10 relative z-10">
+                {PHASES.map((phase, i) => (
+                  <ScrollReveal key={phase.num} variant="fade-up" delay={i * 200}>
+                    <motion.div 
+                      className="group relative"
+                      whileHover={{ y: -10 }}
+                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    >
+                      {/* Step Indicator with Pulse */}
+                      <div className="mb-12 flex items-center justify-center lg:justify-start">
+                        <div className="w-20 h-20 rounded-[2rem] bg-black border border-white/10 flex items-center justify-center font-mono text-3xl font-bold text-bronze shadow-[0_0_50px_rgba(0,0,0,0.5)] group-hover:border-bronze/50 group-hover:shadow-bronze/30 transition-all duration-700 relative z-20 group-hover:rotate-[10deg]">
+                          {phase.num}
+                          {/* Inner glow */}
+                          <div className="absolute inset-0 rounded-[2rem] bg-gradient-to-br from-bronze/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                          {/* Scanning light effect */}
+                          <div className="absolute top-0 left-0 w-full h-1 bg-bronze/40 blur-sm opacity-0 group-hover:opacity-100 group-hover:top-full transition-all duration-1000 ease-in-out" />
+                        </div>
+                      </div>
+
+                      {/* Content Card - Senior Dev Glassmorphism */}
+                      <Card className="p-10 h-full bg-zinc-950/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] hover:bg-zinc-900/40 hover:border-bronze/40 transition-all duration-700 relative overflow-hidden group/card shadow-2xl">
+                        <Spotlight size={500} />
+                        
+                        <div className="relative z-10 flex flex-col h-full">
+                          <div className="flex items-center gap-4 mb-6">
+                            <span className="h-0.5 w-12 bg-gradient-to-r from-bronze to-transparent" />
+                            <code className="text-[10px] font-mono text-bronze/80 tracking-[0.25em] uppercase px-2 py-0.5 border border-bronze/10 rounded">
+                              MOD::{phase.tag}
+                            </code>
+                          </div>
+                          
+                          <h4 className="text-3xl font-display font-bold text-white/90 mb-6 group-hover/card:text-white group-hover/card:tracking-tight transition-all duration-500">
+                            {phase.title}
+                          </h4>
+                          
+                          <p className="text-white/40 leading-relaxed text-base group-hover/card:text-white/60 transition-colors duration-500 mb-10">
+                            {phase.desc}
+                          </p>
+
+                          <div className="mt-auto">
+                            <div className="flex items-center justify-between pt-8 border-t border-white/5">
+                              <div className="flex -space-x-1">
+                                {[1, 2, 3, 4].map((dot) => (
+                                  <div key={dot} className="w-2 h-2 rounded-full border border-white/20 bg-black group-hover/card:border-bronze/50 group-hover/card:bg-bronze/20 transition-all duration-500" style={{ transitionDelay: `${dot * 100}ms` }} />
+                                ))}
+                              </div>
+                              <div className="p-2 rounded-xl bg-white/5 group-hover/card:bg-bronze/10 transition-colors">
+                                <CheckCircle2 className="w-6 h-6 text-white/5 group-hover/card:text-bronze transition-all duration-700 scale-75 group-hover/card:scale-110" strokeWidth={1} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Background Data Readout (Visual Decoration) */}
+                        <div className="absolute top-4 right-4 font-mono text-[8px] text-white/5 pointer-events-none select-none opacity-0 group-hover/card:opacity-100 transition-opacity duration-1000">
+                          {Array.from({length: 5}).map((_, i) => (
+                            <div key={i}>0x42A{i}E_VALIDATED</div>
+                          ))}
+                        </div>
+                      </Card>
+                    </motion.div>
+                  </ScrollReveal>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -328,9 +472,12 @@ export const Landing = () => {
             </div>
           </section>
         </ScrollReveal>
+      </main>
 
+      <div className="sticky bottom-0 z-0">
         <Footer />
       </div>
     </div>
+
   );
 };

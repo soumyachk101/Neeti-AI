@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { UserPlus, Briefcase, User } from 'lucide-react';
+import { Briefcase, User, Cpu, Network, Terminal, UserPlus, Lock } from 'lucide-react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Logo } from '../components/Logo';
+import { motion } from 'framer-motion';
 
 function getPasswordStrength(pw: string): { score: number; label: string } {
   if (!pw) return { score: 0, label: '' };
@@ -16,6 +17,16 @@ function getPasswordStrength(pw: string): { score: number; label: string } {
   const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
   return { score, label: labels[score] };
 }
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.1 } },
+};
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 20 } },
+};
 
 export const Register: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -44,11 +55,11 @@ export const Register: React.FC = () => {
     setValidationError('');
 
     if (formData.password !== confirmPassword) {
-      setValidationError('Passwords do not match');
+      setValidationError('Passwords do not match.');
       return;
     }
     if (formData.password.length < 8) {
-      setValidationError('Password must be at least 8 characters');
+      setValidationError('Password must be at least 8 characters.');
       return;
     }
 
@@ -63,94 +74,96 @@ export const Register: React.FC = () => {
     }
   };
 
-  const set = (key: string, value: string) =>
-    setFormData((f) => ({ ...f, [key]: value }));
+  const set = (key: string, value: string) => setFormData((f) => ({ ...f, [key]: value }));
 
   return (
-    <div className="min-h-screen bg-neeti-bg grid lg:grid-cols-12 relative overflow-hidden">
-      <div className="ambient-orb ambient-orb-bronze w-[500px] h-[500px] top-[-10%] left-[-5%] z-0 opacity-60" />
-      <div className="ambient-orb ambient-orb-blue w-[350px] h-[350px] bottom-[10%] right-[10%] z-0 opacity-40" />
+    <div className="min-h-screen bg-[#000000] flex w-full">
+      {/* Left Data/Info Pane - The Senior Developer Aesthetic */}
+      <div className="hidden lg:flex w-5/12 xl:w-2/5 relative bg-[#09090b] border-r border-white/[0.05] flex-col justify-between overflow-hidden">
+        {/* Subtle grid background */}
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'linear-gradient(rgba(212,135,63,.5) 1px,transparent 1px), linear-gradient(90deg,rgba(212,135,63,.5) 1px,transparent 1px)', backgroundSize: '40px 40px' }} />
+        {/* Soft elegant glow */}
+        <div className="absolute top-[20%] -left-[20%] w-[80%] h-[80%] bg-bronze/10 blur-[150px] rounded-full pointer-events-none" />
+        
+        <div className="relative z-10 p-12 lg:p-16 flex flex-col h-full">
+          <div className="mb-auto">
+            <Logo size="lg" showWordmark linkTo="/" className="mb-16" />
+            
+            <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-10 max-w-sm">
+              <motion.div variants={fadeUp}>
+                <h3 className="text-[10px] font-mono text-bronze uppercase tracking-[0.2em] mb-4">System Initialization</h3>
+                <h2 className="text-3xl font-display font-medium text-white mb-6 leading-tight tracking-tight">
+                  Deploy Your Infrastructure
+                </h2>
+                <p className="text-white/50 text-sm leading-relaxed">
+                  Provision your account to access enterprise-grade technical interview evaluation. Ensure all credentials are set correctly before initializing a new active node.
+                </p>
+              </motion.div>
 
-      <div className="hidden lg:flex lg:col-span-5 border-r border-white/[0.06] p-12 flex-col justify-between relative overflow-hidden z-10">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.015]"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(194,112,42,.3) 1px,transparent 1px), linear-gradient(90deg,rgba(194,112,42,.3) 1px,transparent 1px)',
-            backgroundSize: '60px 60px',
-          }}
-        />
-
-        <div className="relative z-10">
-            <Logo size="lg" showWordmark showTagline linkTo="/" className="mb-10 stagger-1" />
-
-          <div className="space-y-6 max-w-md stagger-2">
-            <p className="text-ink-secondary leading-relaxed">
-              Enterprise-grade technical interview evaluation infrastructure.
-              Create your account to access the assessment protocol.
-            </p>
-
-            <div className="border-l-2 border-bronze/25 pl-4 space-y-2 text-sm text-ink-tertiary">
-              <p>✓ Comprehensive candidate assessment</p>
-              <p>✓ Real-time code execution & analysis</p>
-              <p>✓ Multi-agent evaluation framework</p>
-              <p>✓ Evidence-backed verdict generation</p>
-            </div>
+              <div className="pt-6 space-y-5">
+                {[
+                  { icon: Cpu, text: 'Multi-agent evaluation framework ready' },
+                  { icon: Network, text: 'Real-time candidate execution linked' },
+                  { icon: Terminal, text: 'Secure evidence trails active' },
+                ].map((item, idx) => (
+                  <motion.div key={idx} variants={fadeUp} className="flex items-center gap-4 group">
+                    <div className="w-8 h-8 rounded-full bg-white/[0.02] border border-white/[0.05] flex items-center justify-center group-hover:bg-bronze/10 group-hover:border-bronze/30 transition-all">
+                      <item.icon className="w-4 h-4 text-white/40 group-hover:text-bronze transition-colors" />
+                    </div>
+                    <span className="font-mono text-xs text-white/60 group-hover:text-white transition-colors">{item.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
           </div>
-        </div>
 
-        <p className="relative z-10 text-[10px] font-mono text-ink-ghost tracking-[0.15em] stagger-3">
-          REGISTRATION_PORTAL_v2.1
-        </p>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }} className="mt-8 pt-8 border-t border-white/[0.05]">
+            <p className="text-[10px] font-mono text-white/30 tracking-[0.2em] uppercase">
+              Node_Registration_v2.1 :: Secure_Channel_Established
+            </p>
+          </motion.div>
+        </div>
       </div>
 
-      <div className="lg:col-span-7 flex items-center justify-center p-8 lg:p-12 relative z-10">
-        <div className="w-full max-w-md">
-          <div className="mb-8 stagger-1">
-            <div className="flex items-center gap-2 mb-1">
-              <UserPlus className="w-5 h-5 text-bronze" strokeWidth={1.5} />
-              <h2 className="text-2xl font-display font-bold text-ink-primary">
-                Account Registration
-              </h2>
-            </div>
-            <p className="text-sm text-ink-tertiary">Initialize your access credentials</p>
+      {/* Right Auth Pane */}
+      <div className="w-full lg:w-7/12 xl:w-3/5 flex items-center justify-center p-8 lg:p-16 relative">
+        <div className="absolute top-8 right-8 hidden lg:block z-20">
+          <p className="text-sm text-white/40">
+            Existing credentials?{' '}
+            <Link to="/login" className="text-white hover:text-white/80 font-medium transition-colors">
+              Log in
+            </Link>
+          </p>
+        </div>
+
+        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="w-full max-w-[460px]">
+          
+          <div className="lg:hidden mb-12 flex justify-center">
+            <Logo size="lg" showWordmark linkTo="/" />
           </div>
 
+          <motion.div variants={fadeUp} className="mb-10">
+            <h1 className="text-2xl font-display font-semibold text-white tracking-tight mb-2">Create an account</h1>
+            <p className="text-sm text-white/50">Setup your Neeti workspace to start evaluating.</p>
+          </motion.div>
+
           {(error || validationError) && (
-            <div className="mb-5 p-3 border-l-4 border-status-critical bg-status-critical/5 rounded-r-md text-sm text-status-critical animate-slide-up">
-              {validationError ||
-                (typeof error === 'string' ? error : 'An error occurred. Please try again.')}
-            </div>
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="text-xs text-red-400 font-medium bg-red-500/10 border border-red-500/20 rounded-md p-3 mb-6"
+            >
+              {validationError || (typeof error === 'string' ? error : 'Registration failed. Please try again.')}
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="stagger-2">
-              <Input
-                label="Full Name"
-                type="text"
-                placeholder="John Doe"
-                value={formData.full_name}
-                onChange={(e) => set('full_name', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="stagger-3">
-              <Input
-                label="Email Address"
-                type="email"
-                placeholder="your@company.com"
-                value={formData.email}
-                onChange={(e) => set('email', e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="stagger-4">
-              <p className="block text-sm font-medium text-ink-secondary mb-2">Account Type</p>
-              <div className="grid grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            
+            <motion.div variants={fadeUp} className="space-y-3">
+              <label className="text-xs font-medium text-white/80">Account Type</label>
+              <div className="grid grid-cols-2 gap-4">
                 {(['recruiter', 'candidate'] as const).map((role) => (
-                  <label key={role} className="cursor-pointer group">
+                  <label key={role} className="cursor-pointer group block">
                     <input
                       type="radio"
                       name="role"
@@ -159,92 +172,108 @@ export const Register: React.FC = () => {
                       onChange={(e) => set('role', e.target.value)}
                       className="sr-only"
                     />
-                    <div
-                      className={`p-4 border rounded-md transition-all duration-300 ${
-                        formData.role === role
-                          ? 'border-bronze bg-bronze-muted shadow-glow scale-[1.02]'
-                          : 'border-neeti-border hover:border-neeti-border-strong bg-neeti-surface/50'
-                      }`}
-                    >
-                      {role === 'recruiter' ? (
-                        <Briefcase className="w-5 h-5 mb-2 text-bronze" strokeWidth={1.5} />
-                      ) : (
-                        <User className="w-5 h-5 mb-2 text-bronze" strokeWidth={1.5} />
-                      )}
-                      <p className="font-medium text-ink-primary text-sm mb-0.5 capitalize">
-                        {role}
-                      </p>
-                      <p className="text-xs text-ink-tertiary">
-                        {role === 'recruiter' ? 'Create & manage sessions' : 'Join interviews'}
+                    <div className={`p-4 rounded-xl border transition-all duration-300 ${
+                      formData.role === role
+                        ? 'border-bronze bg-bronze/[0.05] shadow-[0_0_20px_rgba(212,135,63,0.1)]'
+                        : 'border-white/[0.08] bg-transparent text-white/50 hover:bg-white/[0.02]'
+                    }`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 rounded-lg ${formData.role === role ? 'bg-bronze/20 text-bronze' : 'bg-white/5 text-white/40'}`}>
+                          {role === 'recruiter' ? <Briefcase className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                        </div>
+                        <p className={`font-medium text-sm capitalize ${formData.role === role ? 'text-white' : 'text-white/60'}`}>
+                          {role}
+                        </p>
+                      </div>
+                      <p className="text-xs text-white/40 pl-[44px]">
+                        {role === 'recruiter' ? 'I want to evaluate candidates' : 'I want to take an assessment'}
                       </p>
                     </div>
                   </label>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className="stagger-5">
+            <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <Input
-                label="Password"
-                type="password"
-                placeholder="Minimum 8 characters"
-                value={formData.password}
-                onChange={(e) => set('password', e.target.value)}
+                label="Full Name"
+                type="text"
+                placeholder="John Doe"
+                value={formData.full_name}
+                onChange={(e) => set('full_name', e.target.value)}
+                icon={<User className="w-4 h-4 text-white/40" />}
                 required
+                className="bg-[#09090b] border-white/[0.08] text-white focus:border-bronze focus:ring-1 focus:ring-bronze/50"
               />
-              {/* Password strength meter */}
-              {formData.password && (
-                <div className="mt-2">
-                  <div className="strength-meter">
-                    <div className={`strength-fill strength-${strength.score}`} />
-                  </div>
-                  <p className={`text-[10px] mt-1 font-mono tracking-wider ${
-                    strength.score <= 1 ? 'text-status-critical' :
-                    strength.score === 2 ? 'text-status-warning' :
-                    strength.score === 3 ? 'text-bronze' :
-                    'text-status-success'
-                  }`}>
-                    {strength.label}
-                  </p>
-                </div>
-              )}
-            </div>
+              <Input
+                label="Email Address"
+                type="email"
+                placeholder="you@company.com"
+                value={formData.email}
+                onChange={(e) => set('email', e.target.value)}
+                required
+                className="bg-[#09090b] border-white/[0.08] text-white focus:border-bronze focus:ring-1 focus:ring-bronze/50"
+              />
+            </motion.div>
 
-            <div className="stagger-6">
+            <motion.div variants={fadeUp} className="space-y-4">
+              <div className="relative">
+                <Input
+                  label="Password"
+                  type="password"
+                  placeholder="Minimum 8 characters"
+                  value={formData.password}
+                  onChange={(e) => set('password', e.target.value)}
+                  icon={<Lock className="w-4 h-4 text-white/40" />}
+                  required
+                  className="bg-[#09090b] border-white/[0.08] text-white focus:border-bronze focus:ring-1 focus:ring-bronze/50"
+                />
+                <div className="mt-2 flex gap-1 h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                  {[1, 2, 3, 4].map((level) => (
+                    <div 
+                      key={level} 
+                      className={`flex-1 transition-all duration-500 ${
+                        strength.score >= level 
+                          ? strength.score <= 1 ? 'bg-red-500' 
+                          : strength.score === 2 ? 'bg-orange-500'
+                          : strength.score === 3 ? 'bg-bronze'
+                          : 'bg-green-500'
+                        : 'bg-transparent'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
               <Input
                 label="Confirm Password"
                 type="password"
                 placeholder="Re-enter password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                icon={<Lock className="w-4 h-4 text-white/40" />}
                 required
+                className="bg-[#09090b] border-white/[0.08] text-white focus:border-bronze focus:ring-1 focus:ring-bronze/50"
               />
-            </div>
+            </motion.div>
 
-            <div className="stagger-7">
-              <Button
-                type="submit"
-                variant="primary"
-                className="w-full mt-2 btn-shimmer"
-                loading={isLoading}
-              >
-                {isLoading ? 'Initializing Account…' : 'Create Account'}
+            <motion.div variants={fadeUp} className="pt-4">
+              <Button type="submit" variant="primary" className="w-full h-12 text-sm font-medium" loading={isLoading}>
+                Initialize Account
               </Button>
-            </div>
+            </motion.div>
           </form>
 
-          <div className="mt-8 pt-6 border-t border-white/[0.06] text-center stagger-8">
-            <p className="text-sm text-ink-secondary">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className="text-bronze hover:text-bronze-light font-medium transition-colors"
-              >
-                Sign in
+          <motion.div variants={fadeUp} className="mt-8 text-center lg:hidden">
+            <p className="text-sm text-white/40">
+              Existing credentials?{' '}
+              <Link to="/login" className="text-bronze hover:text-bronze-light transition-colors">
+                Log in
               </Link>
             </p>
-          </div>
-        </div>
+          </motion.div>
+
+        </motion.div>
       </div>
     </div>
   );
