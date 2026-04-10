@@ -4,7 +4,8 @@ import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/compon
 import '@livekit/components-styles';
 import { useSessionStore } from '../store/useSessionStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useWebSocket, WebSocketMessage } from '../lib/websocket';
+import { useWebSocket } from '../lib/websocket';
+import type { WebSocketMessage } from '../lib/websocket';
 import { CodeEditor } from '../components/CodeEditor';
 import { Button } from '../components/Button';
 import { LogOut, Code, Maximize2, Minimize2, FileText, Clock, AlertTriangle, Wifi, WifiOff } from 'lucide-react';

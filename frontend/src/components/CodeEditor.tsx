@@ -3,7 +3,7 @@ import Editor from '@monaco-editor/react';
 import { codingApi } from '@/lib/api';
 import { Button } from './Button';
 import { Play, CheckCircle, XCircle, Terminal } from 'lucide-react';
-import { WebSocketMessage } from '@/lib/websocket';
+import type { WebSocketMessage } from '@/lib/websocket';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface CodeEditorProps {
