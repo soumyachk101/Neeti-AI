@@ -1,6 +1,6 @@
 import AnoAI from "@/components/ui/animated-shader-background";
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Rocket, Shield, Brain, Infinity } from 'lucide-react';
+import { ArrowLeft, Rocket, Shield, Brain, Infinity as InfinityIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const DemoOne = () => {
@@ -17,7 +17,7 @@ const DemoOne = () => {
           transition={{ duration: 0.8 }}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-md mb-4"
         >
-          <Infinity className="w-5 h-5 text-primary animate-pulse" />
+          <InfinityIcon className="w-5 h-5 text-primary animate-pulse" />
           <span className="text-xs font-mono text-primary tracking-widest uppercase">Aurora Neural Interface</span>
         </motion.div>
 

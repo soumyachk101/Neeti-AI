@@ -1,0 +1,1 @@
+const fs=require('fs');const data=JSON.parse(fs.readFileSync('lint-errors.json'));data.forEach(f=>{if(f.errorCount>0||f.warningCount>0){console.log('\n'+f.filePath);f.messages.forEach(m=>console.log(`  Line ${m.line}:${m.column} ${m.severity===2?'error':'warn'} ${m.message} (${m.ruleId})`))}});

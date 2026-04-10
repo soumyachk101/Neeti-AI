@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LiveKitRoom, VideoConference, RoomAudioRenderer } from '@livekit/components-react';
 import '@livekit/components-styles';
 import { useSessionStore } from '../store/useSessionStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { useWebSocket } from '../lib/websocket';
+import { WebSocketProvider, useWebSocketContext } from '../lib/websocket';
 import type { WebSocketMessage } from '../lib/websocket';
 import { CodeEditor } from '../components/CodeEditor';
 import { Button } from '../components/Button';
@@ -25,29 +25,34 @@ const InterviewTimer: React.FC = () => {
   return <span className="font-mono tabular-nums text-sm font-semibold text-ink-primary">{fmt(elapsedTime)}</span>;
 };
 
-const WorkspaceEditor: React.FC<{ sessionId: number; language: string; lastMessage: WebSocketMessage | null }> = ({ sessionId, language, lastMessage }) => {
+const WorkspaceEditor: React.FC<{ sessionId: number; language: string }> = React.memo(({ sessionId, language }) => {
   const [currentCode, setCurrentCode] = useState('');
   const { user } = useAuthStore();
+  const { onMessage } = useWebSocketContext();
   const isRecruiter = user?.role === 'recruiter';
 
   useEffect(() => {
-    if (isRecruiter && lastMessage) {
-      if (lastMessage.type === 'code_changed' || lastMessage.type === 'code_executed') {
-        if (lastMessage.data?.code) {
-          setCurrentCode(lastMessage.data.code as string);
+    if (!isRecruiter) return;
+
+    const unsubscribe = onMessage((message: WebSocketMessage) => {
+      if (message.type === 'code_changed' || message.type === 'code_executed') {
+        if (message.data?.code && message.data.code !== currentCode) {
+          setCurrentCode(message.data.code as string);
         }
       }
-    }
-  }, [lastMessage, isRecruiter]);
+    });
 
-  const handleChange = (val: string) => {
+    return unsubscribe;
+  }, [onMessage, isRecruiter, currentCode]);
+
+  const handleChange = useCallback((val: string) => {
     setCurrentCode(val);
-  };
+  }, []);
 
   return (
     <>
       <div className="flex-1 p-3">
-        <CodeEditor value={currentCode} onChange={handleChange} language={language} sessionId={sessionId} lastMessage={lastMessage} />
+        <CodeEditor value={currentCode} onChange={handleChange} language={language} sessionId={sessionId} />
       </div>
 
       <div className="border-t border-neeti-border bg-neeti-surface/60 px-4 py-2">
@@ -62,21 +67,31 @@ const WorkspaceEditor: React.FC<{ sessionId: number; language: string; lastMessa
       </div>
     </>
   );
-};
+});
 
 export const InterviewRoom: React.FC = () => {
+  const { currentSession } = useSessionStore();
+
+  if (!currentSession) return null;
+
+  return (
+    <WebSocketProvider sessionId={currentSession.id}>
+      <InterviewRoomContent />
+    </WebSocketProvider>
+  );
+};
+
+const InterviewRoomContent: React.FC = () => {
   const navigate = useNavigate();
   const { currentSession, roomToken, fetchRoomToken } = useSessionStore();
-  const { user } = useAuthStore();
-  const isRecruiter = user?.role === 'recruiter';
-  const { isConnected, lastMessage } = useWebSocket(currentSession?.id || null);
+  const { isConnected } = useWebSocketContext();
 
   const [isCodeExpanded, setIsCodeExpanded] = useState(false);
   const [language, setLanguage] = useState('typescript');
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   useEffect(() => {
-    if (!currentSession) { navigate(isRecruiter ? '/dashboard' : '/join'); return; }
+    if (!currentSession) { navigate('/dashboard'); return; }
     if (!roomToken) {
       fetchRoomToken(currentSession.id).catch(() => navigate('/dashboard'));
     }
@@ -200,7 +215,7 @@ export const InterviewRoom: React.FC = () => {
             </div>
           </div>
 
-          <WorkspaceEditor sessionId={currentSession?.id || 0} language={language} lastMessage={lastMessage} />
+          <WorkspaceEditor sessionId={currentSession?.id || 0} language={language} />
         </div>
       </div>
 

@@ -79,7 +79,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         except Exception as e:
             await session.rollback()
-            logger.error(f"Database session error: {e}")
+            logger.error(f"Database session error (GET_DB): {str(e)}", exc_info=True)
             raise
         finally:
             await session.close()

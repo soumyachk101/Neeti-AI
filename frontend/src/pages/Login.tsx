@@ -42,7 +42,7 @@ export function Login() {
     try {
       await login(email, password);
       navigate('/dashboard');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(extractErrorMessage(err, 'Authentication failed'));
     }
   };

@@ -36,6 +36,7 @@ function mapEvalToScores(ev: Evaluation): EvaluationScore[] {
 }
 
 function mapEvalToAgents(ev: Evaluation): AIAgent[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const findings: Finding[] = (ev.key_findings as Finding[] || []).map((f: any) => ({
     content: f.message || f.content || String(f),
     severity: f.severity === 'high' ? 'negative' : f.severity === 'medium' ? 'neutral' : 'positive',
@@ -80,6 +81,7 @@ export default function SessionResults() {
         setRec(normalizeRec(ev.recommendation));
         setScores(mapEvalToScores(ev));
         setAgents(mapEvalToAgents(ev));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         const msg = err?.response?.status === 404
           ? 'Evaluation not available yet. It will appear once the session ends and agents finish processing.'

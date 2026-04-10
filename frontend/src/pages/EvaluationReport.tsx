@@ -64,6 +64,7 @@ export const EvaluationReport = () => {
       try {
         const ev = await evaluationApi.getEvaluation(parseInt(id));
         setEvaluation(ev);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         setError(err?.response?.status === 404
           ? 'Evaluation not available yet.'
@@ -121,6 +122,7 @@ export const EvaluationReport = () => {
     evidence.push({ type: 'warning', title: w, content: w, level: 'ADVISORY' });
   }
   if (evidence.length === 0 && evaluation.key_findings) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const f of evaluation.key_findings as any[]) {
       evidence.push({
         type: (f.severity === 'high' ? 'warning' : 'success'),

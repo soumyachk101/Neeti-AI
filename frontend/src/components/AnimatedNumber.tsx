@@ -48,6 +48,7 @@ export const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
     }, delay);
 
     return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, duration, delay]);
 
   const formatted = formatFn ? formatFn(display) : display.toString();

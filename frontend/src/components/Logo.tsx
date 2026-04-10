@@ -24,20 +24,8 @@ export const Logo: React.FC<LogoProps> = ({
   const s = SIZE_MAP[size];
   const fill = color || '#4C82FB';
 
-  const Wrapper = linkTo
-    ? ({ children }: { children: React.ReactNode }) => (
-        <Link to={linkTo} className={clsx('inline-flex items-center gap-3 transition-opacity hover:opacity-80', className)}>
-          {children}
-        </Link>
-      )
-    : ({ children }: { children: React.ReactNode }) => (
-        <div className={clsx('inline-flex items-center gap-3', className)}>
-          {children}
-        </div>
-      );
-
-  return (
-    <Wrapper>
+  const content = (
+    <>
       <svg
         width={s}
         height={s}
@@ -161,7 +149,21 @@ export const Logo: React.FC<LogoProps> = ({
           )}
         </div>
       )}
-    </Wrapper>
+    </>
+  );
+
+  if (linkTo) {
+    return (
+      <Link to={linkTo} className={clsx('inline-flex items-center gap-3 transition-opacity hover:opacity-80', className)}>
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={clsx('inline-flex items-center gap-3', className)}>
+      {content}
+    </div>
   );
 };
 
