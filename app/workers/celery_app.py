@@ -29,13 +29,4 @@ celery_app.conf.update(
     worker_max_tasks_per_child=100,
 )
 
-celery_app.conf.task_routes = {
-    "app.workers.agent_tasks.*": {"queue": "agents"},
-    "app.workers.session_tasks.*": {"queue": "sessions"},
-}
-
 logger.info("Celery app configured")
-
-# Synced for GitHub timestamp
-
- 

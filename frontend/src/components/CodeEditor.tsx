@@ -12,6 +12,7 @@ interface CodeEditorProps {
   language: string;
   value: string;
   onChange: (value: string) => void;
+  readOnly?: boolean;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({
@@ -19,6 +20,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({
   language,
   value,
   onChange,
+  readOnly = false,
 }) => {
   const [isExecuting, setIsExecuting] = React.useState(false);
   const [output, setOutput] = React.useState('');
@@ -33,7 +35,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({
     if (!isRecruiter) return;
 
     const unsubscribe = onMessage((message: WebSocketMessage) => {
-      if (message.type === 'code_executed') {
+      if (message.type === 'code_executed' || message.type === 'code.executed') {
         if (message.data?.output !== undefined && message.data?.output !== null) {
           setOutput(String(message.data.output));
         }
@@ -115,8 +117,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({
             padding: { top: 16, bottom: 16 },
             wordWrap: 'on',
             tabSize: 2,
-            quickSuggestions: true,
-            suggestOnTriggerCharacters: true,
+            readOnly: readOnly,
+            quickSuggestions: !readOnly,
+            suggestOnTriggerCharacters: !readOnly,
           }}
         />
       </div>
@@ -127,15 +130,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = React.memo(({
             <Terminal className="w-3.5 h-3.5" />
             Output
           </span>
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={handleExecute}
-            disabled={isExecuting || !value}
-          >
-            <Play className="w-3 h-3" />
-            {isExecuting ? 'Running…' : 'Run Code'}
-          </Button>
+          {!readOnly && (
+            <Button
+              size="sm"
+              variant="primary"
+              onClick={handleExecute}
+              disabled={isExecuting || !value}
+            >
+              <Play className="w-3 h-3" />
+              {isExecuting ? 'Running…' : 'Run Code'}
+            </Button>
+          )}
+          {readOnly && (
+            <span className="text-xs text-primary/70 font-mono uppercase tracking-wider">Live View</span>
+          )}
         </div>
 
         <div className="p-4 h-32 overflow-y-auto font-mono text-sm">

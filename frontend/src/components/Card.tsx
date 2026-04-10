@@ -160,9 +160,6 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           {evidence}
         </p>
 
-        {timestamp && (
-          <p className="text-xs text-ink-tertiary font-mono">{timestamp}</p>
-        )}
       </div>
     </Card>
   );

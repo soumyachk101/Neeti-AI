@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
 from app.core.database import get_db
-from app.core.auth import get_current_user, get_current_recruiter
+from app.core.auth import get_current_user, get_current_recruiter, get_optional_user
 from app.models.models import User, Session, Candidate, SessionStatus
 from app.schemas.schemas import (
     SessionCreate,
@@ -116,7 +116,7 @@ async def create_session(
 async def join_session(
     join_data: SessionJoinRequest,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_optional_user)
 ) -> SessionJoinResponse:
     """Join a session using session code."""
     
@@ -156,7 +156,7 @@ async def join_session(
     if not candidate:
         candidate = Candidate(
             session_id=session.id,
-            user_id=current_user["id"],
+            user_id=current_user["id"] if current_user else None,
             email=join_data.email,
             full_name=join_data.full_name,
             joined_at=datetime.utcnow(),
@@ -491,7 +491,3 @@ async def publish_session_end_event(session_id: int, session):
         session_id=session_id,
         data={"ended_at": session.ended_at.isoformat()}
     )
-
-# Synced for GitHub timestamp
-
- 

@@ -194,7 +194,3 @@ class AnomalyRuleEngine:
 
 # Module-level singleton
 rule_engine = AnomalyRuleEngine()
-
-# Synced for GitHub timestamp
-
- 

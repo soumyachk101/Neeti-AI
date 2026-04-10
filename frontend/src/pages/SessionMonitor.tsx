@@ -3,10 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { AlertTriangle, Activity, Clock } from 'lucide-react';
 import { useSessionStore } from '../store/useSessionStore';
 import { useLiveMonitoring } from '../lib/websocket';
+import type { WebSocketMessage } from '../lib/websocket';
 import { Button } from '../components/Button';
 import { Card, MetricCard, EvidenceCard } from '../components/Card';
 import { StatusIndicator } from '../components/StatusIndicator';
 import { Logo } from '../components/Logo';
+import { CodeEditor } from '../components/CodeEditor';
 
 interface ActivityEvent {
   timestamp: string;
@@ -23,10 +25,24 @@ export default function SessionMonitor() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { currentSession, fetchSession, endSession } = useSessionStore();
-  const { metrics, flags = [], isConnected } = useLiveMonitoring(sessionId ? parseInt(sessionId) : null);
+  const { metrics, flags = [], isConnected, onMessage } = useLiveMonitoring(sessionId ? parseInt(sessionId) : null);
 
   const [activityLog, setActivityLog] = useState<ActivityEvent[]>([]);
   const [showEndDialog, setShowEndDialog] = useState(false);
+  const [candidateCode, setCandidateCode] = useState('');
+  const [candidateLanguage, setCandidateLanguage] = useState('python');
+
+  useEffect(() => {
+    if (!onMessage) return;
+    const unsubscribe = onMessage((message: WebSocketMessage) => {
+      if (message.type === 'code.changed' || message.type === 'code_changed' || message.type === 'code.executed' || message.type === 'code_executed') {
+        const incomingCode = (message.data?.code || message.data?.code_snapshot) as string;
+        if (incomingCode) setCandidateCode(incomingCode);
+        if (message.data?.language) setCandidateLanguage(message.data.language as string);
+      }
+    });
+    return unsubscribe;
+  }, [onMessage]);
 
   useEffect(() => { if (sessionId) fetchSession(parseInt(sessionId)); }, [sessionId, fetchSession]);
 
@@ -43,14 +59,14 @@ export default function SessionMonitor() {
       }
     })();
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setActivityLog(prev => [{ timestamp: new Date().toISOString(), type: m.type as ActivityEvent['type'], message: msg, severity: 'info' as const }, ...prev].slice(0, 50));
+    setActivityLog(prev => [{ timestamp: '', type: m.type as ActivityEvent['type'], message: msg, severity: 'info' as const }, ...prev].slice(0, 50));
   }, [metrics]);
 
   useEffect(() => {
     if (flags?.length) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const events = flags.map((f: any) => ({
-        timestamp: f.timestamp || new Date().toISOString(),
+        timestamp: '',
         type: 'flag' as const,
         message: f.message,
         severity: f.severity as 'info' | 'warning' | 'critical',
@@ -113,46 +129,63 @@ export default function SessionMonitor() {
             </div>
           </div>
 
-          <div className="flex-1 p-5 overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" /> Activity Timeline
-              </h2>
-              <div className="flex items-center gap-3 text-[10px] text-ink-ghost">
-                <span>{activityLog.length} events</span>
-                <Button variant="ghost" size="sm" onClick={() => setActivityLog([])}>Clear</Button>
+          <div className="flex-1 p-5 overflow-hidden flex flex-col lg:flex-row gap-5">
+            <div className="flex-1 overflow-hidden flex flex-col bg-neeti-bg/50 border border-white/5 rounded-xl">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-neeti-border/50 bg-neeti-surface/30">
+                <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-primary" /> Candidate Code
+                </h2>
+                <div className="text-[10px] text-ink-ghost uppercase tracking-widest">{candidateLanguage}</div>
+              </div>
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <CodeEditor
+                    value={candidateCode}
+                    onChange={() => {}}
+                    language={candidateLanguage}
+                    sessionId={sessionId ? parseInt(sessionId) : 0}
+                    readOnly={true}
+                />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-              {activityLog.length === 0 ? (
-                <Card className="text-center py-10">
-                  <Activity className="w-10 h-10 text-ink-ghost mx-auto mb-3" />
-                  <p className="text-sm text-ink-secondary">No activity yet. Waiting for candidate…</p>
-                </Card>
-              ) : (
-                activityLog.map((ev, i) => (
-                  <div
-                    key={`${ev.timestamp}-${i}`}
-                    className={`flex items-start gap-3 p-3 rounded-lg border-l-[3px] ${
-                      ev.severity === 'critical' ? 'border-status-critical bg-status-critical/5' :
-                      ev.severity === 'warning'  ? 'border-status-warning bg-status-warning/5' :
-                                                   'border-neeti-border bg-neeti-surface'
-                    }`}
-                  >
-                    <span className="text-[10px] text-ink-ghost font-mono w-16 shrink-0 pt-0.5">
-                      {new Date(ev.timestamp).toLocaleTimeString()}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5 mb-0.5">
-                        <span className={`w-1.5 h-1.5 rounded-full ${TYPE_DOT[ev.type] || 'bg-ink-ghost'}`} />
-                        <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">{ev.type}</span>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-semibold text-ink-secondary uppercase tracking-wider flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" /> Activity Timeline
+                </h2>
+                <div className="flex items-center gap-3 text-[10px] text-ink-ghost">
+                  <span>{activityLog.length} events</span>
+                  <Button variant="ghost" size="sm" onClick={() => setActivityLog([])}>Clear</Button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                {activityLog.length === 0 ? (
+                  <Card className="text-center py-10">
+                    <Activity className="w-10 h-10 text-ink-ghost mx-auto mb-3" />
+                    <p className="text-sm text-ink-secondary">No activity yet. Waiting for candidate…</p>
+                  </Card>
+                ) : (
+                  activityLog.map((ev, i) => (
+                    <div
+                      key={`ev-${i}`}
+                      className={`flex items-start gap-3 p-3 rounded-lg border-l-[3px] ${
+                        ev.severity === 'critical' ? 'border-status-critical bg-status-critical/5' :
+                        ev.severity === 'warning'  ? 'border-status-warning bg-status-warning/5' :
+                                                     'border-neeti-border bg-neeti-surface'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${TYPE_DOT[ev.type] || 'bg-ink-ghost'}`} />
+                          <span className="text-[10px] font-semibold text-ink-tertiary uppercase tracking-wider">{ev.type}</span>
+                        </div>
+                        <p className="text-sm text-ink-primary">{ev.message}</p>
                       </div>
-                      <p className="text-sm text-ink-primary">{ev.message}</p>
                     </div>
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>

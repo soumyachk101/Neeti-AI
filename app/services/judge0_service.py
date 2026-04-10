@@ -54,7 +54,7 @@ class Judge0Service:
             Dict with execution results (output, error, status)
         """
         
-        if not self.api_url or not self.api_key:
+        if not self.api_url:
             logger.warning("Judge0 not configured, using rule-based analysis")
             return await self._rule_based_execution(code, language)
         
@@ -116,10 +116,10 @@ class Judge0Service:
         """Submit code to Judge0 for execution."""
         
         headers = {
-            "X-RapidAPI-Key": self.api_key,
-            "X-RapidAPI-Host": self.api_url.replace("https://", ""),
             "Content-Type": "application/json"
         }
+        if self.api_key:
+            headers["X-Auth-Token"] = self.api_key
         
         payload = {
             "source_code": code,
@@ -150,10 +150,9 @@ class Judge0Service:
     ) -> Optional[Dict[str, Any]]:
         """Poll Judge0 for submission results."""
         
-        headers = {
-            "X-RapidAPI-Key": self.api_key,
-            "X-RapidAPI-Host": self.api_url.replace("https://", "")
-        }
+        headers = {}
+        if self.api_key:
+            headers["X-Auth-Token"] = self.api_key
         
         for attempt in range(max_attempts):
             await asyncio.sleep(1)
@@ -260,7 +259,3 @@ class Judge0Service:
         }
 
 judge0_service = Judge0Service()
-
-# Synced for GitHub timestamp
-
- 

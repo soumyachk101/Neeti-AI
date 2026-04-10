@@ -159,7 +159,3 @@ class JDParserService:
 
 # Module-level singleton
 jd_parser = JDParserService()
-
-# Synced for GitHub timestamp
-
- 

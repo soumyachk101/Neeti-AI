@@ -161,13 +161,22 @@ async def execute_code(
             detail=f"Execution limit of {MAX_EXECUTIONS_PER_SESSION} per session reached"
         )
     
-    from app.services.judge0_service import judge0_service
-    
-    execution_result = await judge0_service.execute_code(
-        code=event_data.code_snapshot,
-        language=event_data.language,
-        stdin=event_data.metadata.get("stdin") if event_data.metadata else None
-    )
+    try:
+        # Execute code directly on the host machine (Python, Node, GCC all available)
+        from app.services.host_executor import host_execution_service
+        execution_result = await host_execution_service.execute_code(
+            code=event_data.code_snapshot,
+            language=event_data.language,
+            stdin=event_data.metadata.get("stdin") if event_data.metadata else None
+        )
+    except Exception as exec_err:
+        logger.error(f"Host execution failed: {exec_err}")
+        execution_result = {
+            "success": False,
+            "output": None,
+            "error": f"Execution service error: {str(exec_err)}",
+            "status": "error"
+        }
     
     output = execution_result.get("output")
     error = execution_result.get("error")
@@ -190,17 +199,20 @@ async def execute_code(
     db.add(execution_event)
     await db.commit()
     
-    await publish_code_executed(
-        session_id=event_data.session_id,
-        data={
-            "language": event_data.language,
-            "code": event_data.code_snapshot,
-            "output": output,
-            "error": error,
-            "status": execution_result.get("status")
-        }
-    )
-    
+    try:
+        await publish_code_executed(
+            session_id=event_data.session_id,
+            data={
+                "language": event_data.language,
+                "code": event_data.code_snapshot,
+                "output": output,
+                "error": error,
+                "status": execution_result.get("status")
+            }
+        )
+    except Exception as pub_err:
+        logger.warning(f"Failed to publish execution event: {pub_err}")
+
     return {
         "success": execution_result.get("success", False),
         "output": output,
@@ -233,7 +245,3 @@ async def get_coding_events(
     events = result.scalars().all()
     
     return events
-
-# Synced for GitHub timestamp
-
- 

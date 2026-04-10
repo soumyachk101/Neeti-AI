@@ -54,10 +54,9 @@ engine = create_async_engine(
     get_database_url(),
     echo=settings.DEBUG,
     future=True,
-    poolclass=NullPool if settings.ENVIRONMENT == "test" else None,
+    poolclass=NullPool,  # Use NullPool to prevent connection exhaustion with Supabase PgBouncer
     pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    connect_args={"prepared_statement_cache_size": 0},
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -79,7 +78,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             yield session
         except Exception as e:
             await session.rollback()
-            logger.error(f"Database session error (GET_DB): {str(e)}", exc_info=True)
+            logger.error(f"Database session error: {e}")
             raise
         finally:
             await session.close()
@@ -107,7 +106,3 @@ async def close_db() -> None:
     """Close database connections."""
     await engine.dispose()
     logger.info("Database connections closed")
-
-# Synced for GitHub timestamp
-
- 

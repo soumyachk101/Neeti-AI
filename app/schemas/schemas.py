@@ -26,7 +26,7 @@ class UserResponse(BaseModel):
     full_name: str = Field(default="User", min_length=1, max_length=255)
     role: UserRole
     is_active: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -59,7 +59,7 @@ class SessionResponse(BaseModel):
     scheduled_at: Optional[datetime]
     started_at: Optional[datetime]
     ended_at: Optional[datetime]
-    created_at: datetime
+    created_at: Optional[datetime] = None
     room_name: Optional[str]
     job_description: Optional[str] = None
     jd_profile: dict[str, Any] = Field(default_factory=dict)
@@ -89,7 +89,7 @@ class CandidateResponse(BaseModel):
     full_name: str
     joined_at: Optional[datetime]
     is_present: bool
-    created_at: datetime
+    created_at: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -200,51 +200,6 @@ class EvaluationResponse(BaseModel):
     
     model_config = ConfigDict(from_attributes=True)
 
-class PeripheralDeviceInfo(BaseModel):
-    """Single peripheral device descriptor."""
-    device_id: str = ""
-    kind: str = Field(..., description="audioinput | audiooutput | videoinput | screen | usb | bluetooth | hid")
-    label: str = ""
-    group_id: str = ""
-
-class PeripheralSnapshotCreate(BaseModel):
-    """Initial device inventory submitted at session start."""
-    devices: list[PeripheralDeviceInfo] = Field(default_factory=list)
-    screen_count: int = Field(default=1, ge=1)
-    screen_width: int = Field(default=1920, ge=0)
-    screen_height: int = Field(default=1080, ge=0)
-    user_agent: str = ""
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-class PeripheralChangeCreate(BaseModel):
-    """Device change event during an active session."""
-    change_type: str = Field(..., description="device_added | device_removed | screen_change")
-    added_devices: list[PeripheralDeviceInfo] = Field(default_factory=list)
-    removed_devices: list[PeripheralDeviceInfo] = Field(default_factory=list)
-    current_devices: list[PeripheralDeviceInfo] = Field(default_factory=list)
-    screen_count: int = Field(default=1, ge=1)
-    screen_width: int = Field(default=1920, ge=0)
-    screen_height: int = Field(default=1080, ge=0)
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-class PeripheralEventResponse(BaseModel):
-    """Peripheral event as returned to the recruiter."""
-    id: int
-    session_id: int
-    timestamp: datetime
-    event_type: str
-    device_snapshot: dict[str, Any] = {}
-    device_changes: dict[str, Any] = {}
-    alert_severity: Optional[str] = None
-    alert_message: Optional[str] = None
-    camera_count: int = 0
-    microphone_count: int = 0
-    speaker_count: int = 0
-    screen_count: int = 1
-    metadata: dict[str, Any] = Field(default_factory=dict, validation_alias="meta_data")
-    
-    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
-
 class WSMessage(BaseModel):
     """Base WebSocket message."""
     type: str
@@ -262,7 +217,3 @@ class WSMetricUpdate(WSMessage):
 class WSSessionUpdate(WSMessage):
     """Session status update."""
     type: str = "session_update"
-
-# Synced for GitHub timestamp
-
- 

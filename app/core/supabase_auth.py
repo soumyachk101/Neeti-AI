@@ -289,7 +289,3 @@ async def get_current_candidate(
         )
     
     return current_user
-
-# Synced for GitHub timestamp
-
- 

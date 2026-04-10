@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, Check, Play, MonitorPlay, BarChart3, XCircle, Cpu } from 'lucide-react';
 import { useSessionStore } from '../store/useSessionStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { Button } from '../components/Button';
 import { Card } from '../components/Card';
 import { StatusIndicator } from '../components/StatusIndicator';
@@ -18,6 +19,8 @@ export const SessionDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentSession, fetchSession, startSession, endSession, isLoading, error } = useSessionStore();
+  const userRole = useAuthStore(s => s.user?.role);
+  const isRecruiter = userRole === 'recruiter';
   const [copied, setCopied] = useState(false);
   const [showEndDialog, setShowEndDialog] = useState(false);
 
@@ -102,25 +105,50 @@ export const SessionDetail: React.FC = () => {
       <main className="max-w-7xl mx-auto px-6 lg:px-8 py-10 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-5">
-                Session Access Code
-              </h2>
-              <div className="flex flex-col sm:flex-row items-stretch gap-4">
-                <div className="flex-1 bg-neeti-bg border-2 border-neeti-border rounded-lg p-6 text-center">
-                  <p className="text-[10px] uppercase tracking-widest text-ink-ghost mb-2">Candidate Join Code</p>
-                  <p className="font-mono text-4xl md:text-5xl text-ink-primary tracking-[0.3em] select-all">
-                    {s.session_code}
-                  </p>
+            {/* Session code — recruiter only */}
+            {isRecruiter && (
+              <Card>
+                <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-5">
+                  Session Access Code
+                </h2>
+                <div className="flex flex-col sm:flex-row items-stretch gap-4">
+                  <div className="flex-1 bg-neeti-bg border-2 border-neeti-border rounded-lg p-6 text-center">
+                    <p className="text-[10px] uppercase tracking-widest text-ink-ghost mb-2">Candidate Join Code</p>
+                    <p className="font-mono text-4xl md:text-5xl text-ink-primary tracking-[0.3em] select-all">
+                      {s.session_code}
+                    </p>
+                  </div>
+                  <Button variant="secondary" onClick={copyCode} icon={copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} className="sm:self-center">
+                    {copied ? 'Copied' : 'Copy'}
+                  </Button>
                 </div>
-                <Button variant="secondary" onClick={copyCode} icon={copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} className="sm:self-center">
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-              </div>
-              <p className="mt-3 text-xs text-ink-ghost border-l-2 border-neeti-border pl-3">
-                Join URL: {window.location.origin}/join
-              </p>
-            </Card>
+                <p className="mt-3 text-xs text-ink-ghost border-l-2 border-neeti-border pl-3">
+                  Join URL: {window.location.origin}/join
+                </p>
+              </Card>
+            )}
+
+            {/* Candidate view — session info card */}
+            {!isRecruiter && (
+              <Card>
+                <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-3">Session Info</h2>
+                <p className="text-sm text-ink-secondary">You are a participant in this interview session.</p>
+                {s.status === 'live' && (
+                  <div className="mt-4">
+                    <Button variant="primary" className="w-full" onClick={() => navigate(`/sessions/${s.id}/interview`)} icon={<MonitorPlay className="w-4 h-4" />}>
+                      Enter Interview Room
+                    </Button>
+                  </div>
+                )}
+                {s.status === 'completed' && (
+                  <div className="mt-4">
+                    <Button variant="primary" className="w-full" onClick={() => navigate(`/sessions/${s.id}/results`)}>
+                      View Results
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )}
 
             {s.description && (
               <Card>
@@ -129,19 +157,11 @@ export const SessionDetail: React.FC = () => {
               </Card>
             )}
 
-            <Card>
-              <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-5">Timeline</h2>
-              <div className="divide-y divide-neeti-border">
-                {timeline.map(({ label, ts }) => (
-                  <div key={label} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
-                    <span className="text-sm text-ink-tertiary">{label}</span>
-                    <span className="font-mono text-sm text-ink-primary">{new Date(ts!).toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-            </Card>
+
           </div>
 
+          {/* Controls & AI Agents — recruiter only */}
+          {isRecruiter && (
           <div className="space-y-6">
             <Card>
               <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-5">Controls</h2>
@@ -190,6 +210,7 @@ export const SessionDetail: React.FC = () => {
               </div>
             </Card>
           </div>
+          )}
         </div>
       </main>
 

@@ -62,7 +62,3 @@ class MetricsService:
                 },
                 "status": "active" if coding_events_count > 0 or speech_segments_count > 0 else "idle"
             }
-
-# Synced for GitHub timestamp
-
- 

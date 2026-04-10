@@ -109,7 +109,6 @@ class Session(Base):
     vision_metrics = relationship("VisionMetric", back_populates="session", cascade="all, delete-orphan")
     agent_outputs = relationship("AgentOutput", back_populates="session", cascade="all, delete-orphan")
     evaluations = relationship("Evaluation", back_populates="session", cascade="all, delete-orphan")
-    peripheral_events = relationship("PeripheralEvent", back_populates="session", cascade="all, delete-orphan")
     
     __table_args__ = (
         Index("idx_session_status_recruiter", "status", "recruiter_id"),
@@ -280,47 +279,3 @@ class Evaluation(Base):
         Index("idx_evaluation_recommendation", "recommendation"),
         Index("idx_evaluation_score", "overall_score"),
     )
-
-class PeripheralEvent(Base):
-    """
-    Peripheral device tracking events.
-    Captures device inventory snapshots and real-time change alerts
-    as part of the anti-cheat monitoring pipeline.
-    """
-    __tablename__ = "peripheral_events"
-    
-    id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("sessions.id"), nullable=False)
-    
-    timestamp = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    event_type = Column(String(50), nullable=False)  # "snapshot" | "device_added" | "device_removed" | "screen_change"
-    
-    # Full device inventory at the time of this event
-    device_snapshot = Column(JSON, default=dict)  # {cameras: [], microphones: [], speakers: [], screens: int}
-    
-    # What changed (for change events only)
-    device_changes = Column(JSON, default=dict)  # {added: [...], removed: [...], change_type: "..."}
-    
-    # Alert metadata
-    alert_severity = Column(String(20), nullable=True)   # "low" | "medium" | "high" | "critical"
-    alert_message = Column(Text, nullable=True)           # Human-readable description
-    
-    # Device counts at this point in time
-    camera_count = Column(Integer, default=0)
-    microphone_count = Column(Integer, default=0)
-    speaker_count = Column(Integer, default=0)
-    screen_count = Column(Integer, default=1)
-    
-    meta_data = Column(JSON, default=dict)
-    
-    session = relationship("Session", back_populates="peripheral_events")
-    
-    __table_args__ = (
-        Index("idx_peripheral_session_timestamp", "session_id", "timestamp"),
-        Index("idx_peripheral_event_type", "event_type"),
-        Index("idx_peripheral_severity", "alert_severity"),
-    )
-
-# Synced for GitHub timestamp
-
- 

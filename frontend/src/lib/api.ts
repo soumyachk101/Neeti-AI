@@ -88,7 +88,6 @@ export interface User {
 export interface SessionCreateRequest {
   title: string;
   description?: string;
-  scheduled_at?: string;
   metadata?: Record<string, unknown>;
 }
 

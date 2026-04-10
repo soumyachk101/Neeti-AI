@@ -49,7 +49,6 @@ def _resolve_role(user) -> str:
         logger.warning(f"Invalid role '{user_role}' for user {user.id}, defaulting to candidate")
         return "candidate"
     
-    logger.debug(f"Resolved role '{user_role}' for user {user.id}")
     return user_role
 
 
@@ -77,8 +76,6 @@ async def get_current_user(
         user = user_response.user
         role = _resolve_role(user)
         
-        logger.info(f"Authenticated user: {user.email} (ID: {user.id}) as {role}")
-        
         return {
             "id": user.id,
             "email": user.email,
@@ -96,12 +93,40 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+security_optional = HTTPBearer(auto_error=False)
+
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional)
+) -> Optional[dict]:
+    """Dependency for endpoints that can be accessed anonymously."""
+    if not credentials:
+        return None
+        
+    token = credentials.credentials
+    try:
+        supabase = get_supabase_client()
+        user_response = supabase.auth.get_user(token)
+        
+        if not user_response or not user_response.user:
+            return None
+        
+        user = user_response.user
+        role = _resolve_role(user)
+        
+        return {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.user_metadata.get("full_name") if user.user_metadata else None,
+            "role": role,
+        }
+    except Exception:
+        return None
+
 async def get_current_recruiter(
     current_user: dict = Depends(get_current_user)
 ) -> dict:
     """Dependency to ensure current user is a recruiter."""
     if current_user.get("role") != "recruiter":
-        logger.warning(f"Access denied: User {current_user['id']} has role '{current_user.get('role')}', needs 'recruiter'")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Recruiter access required"
@@ -118,7 +143,3 @@ async def get_current_candidate(
             detail="Candidate access required"
         )
     return current_user
-
-# Synced for GitHub timestamp
-
- 

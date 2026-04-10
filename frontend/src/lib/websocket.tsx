@@ -4,6 +4,11 @@ import { supabase } from './supabase';
 
 const WS_BASE_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 
+const MAX_RECONNECT_ATTEMPTS = 5;
+const BASE_RECONNECT_DELAY = 1000;
+const MAX_RECONNECT_DELAY = 30000;
+
+// ── Types ──
 export interface WebSocketMessage {
     type: string;
     timestamp: string;
@@ -18,9 +23,8 @@ interface WebSocketContextType {
     reconnect: () => void;
 }
 
-const WebSocketContext = createContext<WebSocketContextType | null>(null);
-
-export const WebSocketProvider: React.FC<{ sessionId: number | null; children: React.ReactNode }> = ({ sessionId, children }) => {
+// ── Shared connection logic ──
+function useWebSocketConnection(sessionId: number | null, wsPath: string) {
     const [isConnected, setIsConnected] = useState(false);
     const [connectionFailed, setConnectionFailed] = useState(false);
     const wsRef = useRef<WebSocket | null>(null);
@@ -28,61 +32,90 @@ export const WebSocketProvider: React.FC<{ sessionId: number | null; children: R
     const reconnectAttemptsRef = useRef(0);
     const listenersRef = useRef<Set<(msg: WebSocketMessage) => void>>(new Set());
     const connectRef = useRef<(() => Promise<void>) | null>(null);
-
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    const BASE_RECONNECT_DELAY = 1000;
-    const MAX_RECONNECT_DELAY = 30000;
+    const intentionalCloseRef = useRef(false);
 
     const connect = useCallback(async () => {
         if (!sessionId) return;
 
+        // Don't reconnect if we already have an open connection
+        if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+        // Get auth token — guard against missing session
         const { data: { session } } = await supabase.auth.getSession();
-        const authToken = session?.access_token || '';
+        const authToken = session?.access_token;
 
-        const url = authToken
-            ? `${WS_BASE_URL}/api/ws/session/${sessionId}?token=${authToken}`
-            : `${WS_BASE_URL}/api/ws/session/${sessionId}`;
+        if (!authToken) {
+            console.warn('[WebSocket] No auth token available, skipping connection');
+            setConnectionFailed(true);
+            return;
+        }
 
-        const ws = new WebSocket(url);
+        const url = `${WS_BASE_URL}${wsPath}/${sessionId}?token=${authToken}`;
 
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            setIsConnected(true);
-            setConnectionFailed(false);
-            reconnectAttemptsRef.current = 0;
-        };
+        try {
+            const ws = new WebSocket(url);
 
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                listenersRef.current.forEach(listener => listener(message));
-            } catch (error) {
-                console.error('Failed to parse WebSocket message:', error);
-            }
-        };
+            ws.onopen = () => {
+                console.log(`[WebSocket] Connected to ${wsPath}/${sessionId}`);
+                setIsConnected(true);
+                setConnectionFailed(false);
+                reconnectAttemptsRef.current = 0;
+            };
 
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
-            setIsConnected(false);
-            wsRef.current = null;
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    listenersRef.current.forEach(listener => listener(message));
+                } catch (error) {
+                    console.error('[WebSocket] Failed to parse message:', error);
+                }
+            };
 
-            if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-                const delay = Math.min(
-                    BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current),
-                    MAX_RECONNECT_DELAY
-                );
-                reconnectAttemptsRef.current += 1;
-                reconnectTimeoutRef.current = window.setTimeout(() => {
-                    const fn = connectRef.current;
-                    if (fn) fn();
-                }, delay);
-            } else {
-                setConnectionFailed(true);
-            }
-        };
+            ws.onerror = (event) => {
+                console.error('[WebSocket] Connection error:', event);
+            };
 
-        wsRef.current = ws;
-    }, [sessionId]);
+            ws.onclose = (event) => {
+                console.log(`[WebSocket] Disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
+                setIsConnected(false);
+                wsRef.current = null;
+
+                // Don't reconnect if we closed intentionally
+                if (intentionalCloseRef.current) {
+                    intentionalCloseRef.current = false;
+                    return;
+                }
+
+                // Don't reconnect on auth failures (1008 = Policy Violation)
+                if (event.code === 1008) {
+                    console.warn('[WebSocket] Auth failed, not reconnecting');
+                    setConnectionFailed(true);
+                    return;
+                }
+
+                if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+                    const delay = Math.min(
+                        BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current),
+                        MAX_RECONNECT_DELAY
+                    );
+                    console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${reconnectAttemptsRef.current + 1}/${MAX_RECONNECT_ATTEMPTS})`);
+                    reconnectAttemptsRef.current += 1;
+                    reconnectTimeoutRef.current = window.setTimeout(() => {
+                        const fn = connectRef.current;
+                        if (fn) fn();
+                    }, delay);
+                } else {
+                    console.warn('[WebSocket] Max reconnect attempts reached');
+                    setConnectionFailed(true);
+                }
+            };
+
+            wsRef.current = ws;
+        } catch (error) {
+            console.error('[WebSocket] Failed to create connection:', error);
+            setConnectionFailed(true);
+        }
+    }, [sessionId, wsPath]);
 
     useEffect(() => {
         connectRef.current = connect;
@@ -91,6 +124,7 @@ export const WebSocketProvider: React.FC<{ sessionId: number | null; children: R
     const disconnect = useCallback(() => {
         if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
         if (wsRef.current) {
+            intentionalCloseRef.current = true;
             wsRef.current.close();
             wsRef.current = null;
         }
@@ -100,12 +134,42 @@ export const WebSocketProvider: React.FC<{ sessionId: number | null; children: R
     const sendMessage = useCallback((message: Record<string, unknown>) => {
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify(message));
+        } else {
+            console.warn('[WebSocket] Cannot send — not connected');
         }
     }, []);
 
+    // Heartbeat logic to ensure connection is actually alive
+    useEffect(() => {
+        if (!isConnected) return;
+
+        let pongReceived = true;
+        const pingInterval = window.setInterval(() => {
+            if (!pongReceived) {
+                console.warn('[WebSocket] Heartbeat timeout. Closing stale connection.');
+                if (wsRef.current) wsRef.current.close(4000, 'Heartbeat timeout');
+                return;
+            }
+            pongReceived = false;
+            sendMessage({ type: 'ping' });
+        }, 15000);
+
+        const handlePong = (msg: WebSocketMessage) => {
+            if (msg.type === 'pong') {
+                pongReceived = true;
+            }
+        };
+        
+        listenersRef.current.add(handlePong);
+        return () => {
+            clearInterval(pingInterval);
+            listenersRef.current.delete(handlePong);
+        };
+    }, [isConnected, sendMessage]);
+
     const onMessage = useCallback((listener: (msg: WebSocketMessage) => void) => {
         listenersRef.current.add(listener);
-        return () => listenersRef.current.delete(listener);
+        return () => { listenersRef.current.delete(listener); };
     }, []);
 
     const reconnect = useCallback(() => {
@@ -119,8 +183,17 @@ export const WebSocketProvider: React.FC<{ sessionId: number | null; children: R
         return () => disconnect();
     }, [connect, disconnect]);
 
+    return { isConnected, connectionFailed, sendMessage, onMessage, reconnect };
+}
+
+// ── Context Provider ──
+const WebSocketContext = createContext<WebSocketContextType | null>(null);
+
+export const WebSocketProvider: React.FC<{ sessionId: number | null; children: React.ReactNode }> = ({ sessionId, children }) => {
+    const value = useWebSocketConnection(sessionId, '/api/ws/session');
+
     return (
-        <WebSocketContext.Provider value={{ isConnected, connectionFailed, sendMessage, onMessage, reconnect }}>
+        <WebSocketContext.Provider value={value}>
             {children}
         </WebSocketContext.Provider>
     );
@@ -134,108 +207,39 @@ export const useWebSocketContext = () => {
     return context;
 };
 
-// Keep old hook for compatibility but make it use Context if possible
+// ── Standalone Hook (for pages that don't use the Provider) ──
 export function useWebSocket(sessionId: number | null) {
-    const [isConnected, setIsConnected] = useState(false);
-    const [connectionFailed, setConnectionFailed] = useState(false);
-    const wsRef = useRef<WebSocket | null>(null);
-    const reconnectTimeoutRef = useRef<number | null>(null);
-    const reconnectAttemptsRef = useRef(0);
-    const listenersRef = useRef<Set<(msg: WebSocketMessage) => void>>(new Set());
-    const connectRef = useRef<(() => Promise<void>) | null>(null);
-
-    const MAX_RECONNECT_ATTEMPTS = 5;
-    const BASE_RECONNECT_DELAY = 1000;
-    const MAX_RECONNECT_DELAY = 30000;
-
-    const connect = useCallback(async () => {
-        if (!sessionId) return;
-        const { data: { session } } = await supabase.auth.getSession();
-        const authToken = session?.access_token || '';
-        const url = authToken
-            ? `${WS_BASE_URL}/api/ws/session/${sessionId}?token=${authToken}`
-            : `${WS_BASE_URL}/api/ws/session/${sessionId}`;
-        const ws = new WebSocket(url);
-        ws.onopen = () => { setIsConnected(true); setConnectionFailed(false); reconnectAttemptsRef.current = 0; };
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                listenersRef.current.forEach(l => l(message));
-            } catch (e) { console.error(e); }
-        };
-        ws.onclose = () => {
-            setIsConnected(false); wsRef.current = null;
-            if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
-                const delay = Math.min(BASE_RECONNECT_DELAY * Math.pow(2, reconnectAttemptsRef.current), MAX_RECONNECT_DELAY);
-                reconnectAttemptsRef.current += 1;
-                reconnectTimeoutRef.current = window.setTimeout(() => {
-                    const fn = connectRef.current;
-                    if (fn) fn();
-                }, delay);
-            } else { setConnectionFailed(true); }
-        };
-        wsRef.current = ws;
-    }, [sessionId]);
-
-    useEffect(() => {
-        connectRef.current = connect;
-    }, [connect]);
-
-    const disconnect = useCallback(() => {
-        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
-        setIsConnected(false);
-    }, []);
-
-    const sendMessage = useCallback((message: Record<string, unknown>) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify(message));
-    }, []);
-
-    const onMessage = useCallback((listener: (msg: WebSocketMessage) => void) => {
-        listenersRef.current.add(listener);
-        return () => listenersRef.current.delete(listener);
-    }, []);
-
-    useEffect(() => {
-        connect();
-        return () => disconnect();
-    }, [connect, disconnect]);
-
-    return { isConnected, sendMessage, onMessage, connectionFailed, reconnect: () => { reconnectAttemptsRef.current = 0; setConnectionFailed(false); connect(); } };
+    return useWebSocketConnection(sessionId, '/api/ws/session');
 }
 
+// ── Live Monitoring Hook (for recruiter session monitoring) ──
 export function useLiveMonitoring(sessionId: number | null) {
-    const [isConnected, setIsConnected] = useState(false);
+    const { isConnected, sendMessage, onMessage, connectionFailed, reconnect } = useWebSocketConnection(sessionId, '/api/ws/session');
+
     const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
-    const wsRef = useRef<WebSocket | null>(null);
-    const pingIntervalRef = useRef<number | null>(null);
 
-    const connect = useCallback(async () => {
-        if (!sessionId) return;
-        const { data: { session } } = await supabase.auth.getSession();
-        const authToken = session?.access_token || '';
-        const url = authToken ? `${WS_BASE_URL}/api/ws/live/${sessionId}?token=${authToken}` : `${WS_BASE_URL}/api/ws/live/${sessionId}`;
-        const ws = new WebSocket(url);
-        ws.onopen = () => { setIsConnected(true); pingIntervalRef.current = window.setInterval(() => { if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'ping' })); }, 30000); };
-        ws.onmessage = (event) => { try { const message = JSON.parse(event.data); if (message.type === 'metrics_update') setMetrics(message.data); } catch (e) { console.error(e); } };
-        ws.onclose = () => { setIsConnected(false); if (pingIntervalRef.current) clearInterval(pingIntervalRef.current); };
-        wsRef.current = ws;
-    }, [sessionId]);
+    useEffect(() => {
+        const unsubscribe = onMessage((message) => {
+            if (message.type === 'metrics_update') {
+                setMetrics(message.data);
+            }
+        });
+        return unsubscribe;
+    }, [onMessage]);
 
-    const disconnect = useCallback(() => {
-        if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-        if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
-        setIsConnected(false);
-    }, []);
+    // Request metrics periodically with a ping
+    useEffect(() => {
+        if (!isConnected) return;
 
-    const requestMetrics = useCallback(() => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send(JSON.stringify({ type: 'request_metrics' }));
-    }, []);
+        const interval = window.setInterval(() => {
+            sendMessage({ type: 'request_metrics' });
+        }, 30000);
 
-    useEffect(() => { connect(); return () => disconnect(); }, [connect, disconnect]);
-    return { isConnected, metrics, requestMetrics, flags: [] as string[] };
+        // Request once immediately
+        sendMessage({ type: 'request_metrics' });
+
+        return () => clearInterval(interval);
+    }, [isConnected, sendMessage]);
+
+    return { isConnected, metrics, requestMetrics: () => sendMessage({ type: 'request_metrics' }), flags: [] as string[], connectionFailed, reconnect, onMessage };
 }
-
-
-
- 

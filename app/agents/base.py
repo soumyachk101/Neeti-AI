@@ -26,7 +26,7 @@ class AgentOutput(BaseModel):
     findings: dict[str, Any] = {}
     flags: list[dict[str, Any]] = []
     insights: Optional[str] = None
-    started_at: datetime
+    started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     status: str = "completed"
     error_message: Optional[str] = None
@@ -128,7 +128,3 @@ class BaseAgent(ABC):
             return 0.0
         
         return min(100.0, max(0.0, total_score / total_weight))
-
-# Synced for GitHub timestamp
-
- 

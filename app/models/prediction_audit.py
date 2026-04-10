@@ -65,7 +65,3 @@ class PredictionAudit(Base):
         Index("idx_audit_model", "model_id"),
         Index("idx_audit_created", "created_at"),
     )
-
-# Synced for GitHub timestamp
-
- 

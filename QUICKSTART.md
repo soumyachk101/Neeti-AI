@@ -1,110 +1,87 @@
-# Quick Start — Neeti AI
-
-Get the platform running in **under 5 minutes**.
+# Neeti AI — Quick Start
 
 ## Prerequisites
 
-| Tool | Why | Get it |
-|------|-----|--------|
-| **Docker Desktop** | Runs all services (API, DB, frontend) | https://docker.com/products/docker-desktop |
-| **Node.js 18+** | Frontend dev server (optional — Docker also works) | https://nodejs.org |
-| **Supabase project** | Auth + database | https://supabase.com (free) |
-| **LiveKit Cloud** | Video/audio (WebRTC) | https://cloud.livekit.io (free) |
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) installed & running
+- [Node.js 20+](https://nodejs.org/) (for local frontend dev)
+- A [Supabase](https://supabase.com) project (free tier works)
 
-## 1 — Clone & configure
+## 1. Configure Environment
 
 ```bash
-git clone https://github.com/sukrit-89/Anti-cheat-interview-system.git
-cd Anti-cheat-interview-system
+# Edit .env in the project root — fill in your Supabase keys:
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-Create a `.env` in the project root:
-
-```env
-# ── Required ──────────────────────────────────
-SUPABASE_URL=https://xxxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-
-LIVEKIT_API_KEY=APIxxxxx
-LIVEKIT_API_SECRET=xxxxx
-LIVEKIT_WS_URL=wss://xxxx.livekit.cloud
-
-# ── Optional (sensible defaults exist) ────────
-OPENAI_API_KEY=sk-...              # AI evaluation (or use Ollama)
-JUDGE0_API_URL=http://localhost:2358  # code execution
-```
-
-## 2 — Start backend (Docker)
+## 2. Start Everything with Docker
 
 ```bash
-docker-compose up -d --build
+# From the project root:
+docker compose up --build
 ```
 
-This launches **API** (`:8000`), **Frontend** (`:3000`), **PostgreSQL**, **Redis**, **Celery workers**, **MinIO**, and **Ollama**.
+This starts:
+| Service          | URL / Port             |
+|-----------------|------------------------|
+| **API Server**   | http://localhost:8000   |
+| **Frontend**     | http://localhost:3000   |
+| **PostgreSQL**   | localhost:5432          |
+| **Redis**        | localhost:6379          |
+| **MinIO Console**| http://localhost:9001   |
+| **Ollama**       | http://localhost:11434  |
 
-Verify:
+## 3. Local Frontend Development (Optional)
 
-```bash
-curl http://localhost:8000/health
-# → {"status":"healthy","database":"connected","redis":"connected"}
-```
-
-## 3 — Start frontend
-
-The frontend is already running via Docker at **http://localhost:3000**.
-
-For development with hot-reload instead:
+For hot-reload during frontend development:
 
 ```bash
 cd frontend
 npm install
 npm run dev
+# → http://localhost:5173 (connects to Docker backend on :8000)
 ```
 
-Dev server runs at **http://localhost:5173**.
-
-## 4 — Try it out
-
-| Step | Action |
-|------|--------|
-| 1 | Register as **Recruiter** → `/register` |
-| 2 | Register as **Candidate** (incognito tab) |
-| 3 | Recruiter: **Create Session** from dashboard |
-| 4 | Copy the **6-char join code** |
-| 5 | Candidate: **Join Session** with the code |
-| 6 | Recruiter: **Start** → both enter the Interview Room |
-| 7 | Code, talk, collaborate |
-| 8 | Recruiter: **End Session** → AI report auto-generates |
-
-## Service URLs
-
-| Service | URL |
-|---------|-----|
-| Frontend (Docker) | http://localhost:3000 |
-| Frontend (dev server) | http://localhost:5173 |
-| Backend API | http://localhost:8000 |
-| Swagger Docs | http://localhost:8000/docs |
-| MinIO Console | http://localhost:9001 (minioadmin / minioadmin) |
-
-## Stopping
+## 4. Verify
 
 ```bash
-docker-compose down        # stop services
-docker-compose down -v     # stop + delete volumes (full reset)
+# Health check
+curl http://localhost:8000/health
+
+# API info
+curl http://localhost:8000/api/info
 ```
 
-## Troubleshooting
+## Architecture
 
-| Problem | Fix |
-|---------|-----|
-| Port 8000 in use | `netstat -ano \| findstr :8000` → kill the PID |
-| Supabase connection fails | Double-check URL + keys in `.env` |
-| Docker build fails | Run `docker system prune -f` then retry |
-| Frontend can't reach API | Ensure backend is healthy first (`curl :8000/health`) |
+```
+NETII Ai_1221/
+├── app/                    # FastAPI backend
+│   ├── api/                # REST & WebSocket routes
+│   ├── core/               # Auth, config, database
+│   ├── models/             # SQLAlchemy ORM models
+│   ├── schemas/            # Pydantic schemas
+│   ├── services/           # AI, LiveKit, Judge0, etc.
+│   ├── agents/             # 5 AI evaluation agents
+│   └── workers/            # Celery background tasks
+├── frontend/               # React + Vite frontend
+│   ├── src/
+│   │   ├── pages/          # Route pages
+│   │   ├── components/     # Reusable UI
+│   │   ├── store/          # Zustand state
+│   │   └── lib/            # API client, websocket, supabase
+│   └── Dockerfile
+├── docker-compose.yml      # Full-stack orchestration
+├── Dockerfile              # Backend container
+├── Dockerfile.worker       # Celery worker container
+├── requirements.txt        # Python dependencies
+└── .env                    # Environment configuration
+```
 
----
+## User Roles
 
-For the full setup guide with all options (Ollama, Judge0 self-hosting, production deployment), see [dev-docs/END_TO_END_SETUP.md](dev-docs/END_TO_END_SETUP.md).
-
- 
+| Role        | Can Do                                              |
+|------------|-----------------------------------------------------|
+| **Recruiter** | Create sessions, view session codes, start/end sessions, monitor live code, view evaluations |
+| **Candidate** | Join sessions via code, write code in interview room, participate in video call |

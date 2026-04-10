@@ -132,7 +132,3 @@ class AIService:
             return result.get("message", {}).get("content", "")
 
 ai_service = AIService()
-
-# Synced for GitHub timestamp
-
- 

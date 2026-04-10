@@ -182,7 +182,3 @@ class StorageService:
             return []
 
 storage_service = StorageService()
-
-# Synced for GitHub timestamp
-
- 

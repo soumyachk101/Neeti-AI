@@ -16,7 +16,7 @@ export const SessionCreate: React.FC = () => {
   const navigate = useNavigate();
   const { createSession, isLoading, error } = useSessionStore();
 
-  const [formData, setFormData] = useState({ title: '', description: '', scheduled_at: '' });
+  const [formData, setFormData] = useState({ title: '', description: '' });
   const set = (k: keyof typeof formData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setFormData(prev => ({ ...prev, [k]: e.target.value }));
 
@@ -26,7 +26,6 @@ export const SessionCreate: React.FC = () => {
       const session = await createSession({
         title: formData.title,
         description: formData.description || undefined,
-        scheduled_at: formData.scheduled_at || undefined,
       });
       navigate(`/sessions/${session.id}`);
     } catch (err) {
@@ -77,13 +76,7 @@ export const SessionCreate: React.FC = () => {
               rows={4}
             />
 
-            <Input
-              label="Scheduled Time"
-              type="datetime-local"
-              value={formData.scheduled_at}
-              onChange={set('scheduled_at')}
-              helperText="Leave empty for immediate availability"
-            />
+
 
             <div className="pt-6 border-t border-neeti-border">
               <div className="border-l-2 border-primary/30 pl-5 mb-8">

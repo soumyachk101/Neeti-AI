@@ -210,7 +210,3 @@ class SpeechService:
         }
 
 speech_service = SpeechService()
-
-# Synced for GitHub timestamp
-
- 

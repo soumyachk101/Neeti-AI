@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.core.database import init_db, close_db
 from app.core.redis import redis_client
 from app.core.logging import logger
-from app.api import supabase_auth, sessions, websocket, coding_events, speech, evaluations, peripherals
+from app.api import supabase_auth, sessions, websocket, coding_events, speech, evaluations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -45,22 +45,35 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ── FIX #7: Restrict CORS methods and headers for production ──
+# ── CORS: Explicit origins required when allow_credentials=True ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=[
-        "Authorization",
-        "Content-Type",
-        "Accept",
-        "Origin",
-        "X-Requested-With",
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
     ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+
+# ── Global exception handler — ensures errors return JSON, not bare 500 ──
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Catch unhandled exceptions and return a proper JSON response with CORS headers."""
+    logger.error(f"Unhandled exception on {request.method} {request.url.path}: {exc}\n{traceback.format_exc()}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {str(exc)}"},
+    )
 
 
 # ── FIX #4: Rate limiting middleware using Redis ──
@@ -122,7 +135,6 @@ app.include_router(websocket.router, prefix="/api")
 app.include_router(coding_events.router, prefix="/api")
 app.include_router(speech.router, prefix="/api")
 app.include_router(evaluations.router, prefix="/api")
-app.include_router(peripherals.router, prefix="/api")
 
 @app.get("/")
 async def root():
@@ -191,7 +203,3 @@ if __name__ == "__main__":
         log_level=settings.LOG_LEVEL.lower(),
         workers=settings.WORKERS if not settings.DEBUG else 1
     )
-
-# Synced for GitHub timestamp
-
- 

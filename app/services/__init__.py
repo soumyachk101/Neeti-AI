@@ -1,4 +1,0 @@
-
-# Synced for GitHub timestamp
-
- 

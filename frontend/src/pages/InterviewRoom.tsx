@@ -28,41 +28,70 @@ const InterviewTimer: React.FC = () => {
 const WorkspaceEditor: React.FC<{ sessionId: number; language: string }> = React.memo(({ sessionId, language }) => {
   const [currentCode, setCurrentCode] = useState('');
   const { user } = useAuthStore();
-  const { onMessage } = useWebSocketContext();
+  const { onMessage, sendMessage } = useWebSocketContext();
   const isRecruiter = user?.role === 'recruiter';
+  const lastSentCodeRef = React.useRef('');
 
+  // Recruiter: listen for code updates from candidates via WebSocket
   useEffect(() => {
-    if (!isRecruiter) return;
-
     const unsubscribe = onMessage((message: WebSocketMessage) => {
-      if (message.type === 'code_changed' || message.type === 'code_executed') {
-        if (message.data?.code && message.data.code !== currentCode) {
-          setCurrentCode(message.data.code as string);
+      // Accept both naming conventions from backend
+      if (message.type === 'code.changed' || message.type === 'code_changed' || message.type === 'code.executed' || message.type === 'code_executed') {
+        const incomingCode = (message.data?.code || message.data?.code_snapshot) as string;
+        if (incomingCode && incomingCode !== lastSentCodeRef.current) {
+          setCurrentCode(incomingCode);
         }
       }
     });
 
     return unsubscribe;
-  }, [onMessage, isRecruiter, currentCode]);
+  }, [onMessage]);
 
+  // Candidate: send code changes via WebSocket (debounced)
   const handleChange = useCallback((val: string) => {
     setCurrentCode(val);
-  }, []);
+
+    if (!isRecruiter) {
+      lastSentCodeRef.current = val;
+      sendMessage({
+        type: 'code.changed',
+        data: {
+          code: val,
+          code_snapshot: val,
+          language,
+          session_id: sessionId,
+        },
+      });
+    }
+  }, [isRecruiter, sendMessage, language, sessionId]);
 
   return (
     <>
       <div className="flex-1 p-3">
-        <CodeEditor value={currentCode} onChange={handleChange} language={language} sessionId={sessionId} />
+        <CodeEditor
+          value={currentCode}
+          onChange={handleChange}
+          language={language}
+          sessionId={sessionId}
+          readOnly={isRecruiter}
+        />
       </div>
 
       <div className="border-t border-neeti-border bg-neeti-surface/60 px-4 py-2">
         <div className="flex items-center gap-4 text-[10px] text-ink-ghost">
           <span>Lines: <span className="font-mono text-ink-secondary">{currentCode.split('\n').length}</span></span>
           <span>Lang: <span className="font-mono text-ink-secondary">{language.toUpperCase()}</span></span>
-          <span className="ml-auto">
-            <span className="w-1.5 h-1.5 rounded-full bg-status-success inline-block mr-1 align-middle animate-pulse-dot" />
-            AI Monitoring Active
-          </span>
+          {isRecruiter && (
+            <span className="ml-auto text-primary/80 font-semibold uppercase tracking-wider">
+              🔒 Read-Only · Observing Candidate
+            </span>
+          )}
+          {!isRecruiter && (
+            <span className="ml-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-status-success inline-block mr-1 align-middle animate-pulse-dot" />
+              AI Monitoring Active
+            </span>
+          )}
         </div>
       </div>
     </>
