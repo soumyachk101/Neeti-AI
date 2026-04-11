@@ -36,7 +36,7 @@ async def verify_session_participant(session_id: int, current_user: dict, db: As
                 and_(Candidate.session_id == session_id, Candidate.user_id == str(user_id))
             )
         )
-        if not candidate.scalar_one_or_none():
+        if not candidate.scalars().first():
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enrolled in this session")
 
     return session

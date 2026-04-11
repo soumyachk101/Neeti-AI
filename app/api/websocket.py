@@ -119,7 +119,7 @@ async def verify_session_membership(user: dict, session_id: int) -> bool:
                     )
                 )
                 
-            if result.scalar_one_or_none():
+            if result.scalars().first():
                 return True
 
         logger.warning(

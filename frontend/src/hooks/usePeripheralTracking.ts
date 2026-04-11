@@ -43,6 +43,21 @@ export function usePeripheralTracking(sessionId: number, candidateId?: number | 
               capabilities: { kind: device.kind },
             });
 
+            // Virtual Camera Detection check
+            const labelLower = (device.label || "").toLowerCase();
+            const virtualKeywords = ['obs', 'virtual', 'manycam', 'snap camera', 'xsplit', 'epoccam', 'vtube', 'mmsh'];
+            const isVirtual = virtualKeywords.some(keyword => labelLower.includes(keyword));
+
+            if (isVirtual) {
+              devicesApi.trackEvent(sessionId, {
+                device_id: registeredDevice.id,
+                event_type: 'virtual_camera_detected',
+                event_data: { label: device.label },
+                window_title: document.title,
+                metadata: { severity: "high" }
+              }).catch(console.error);
+            }
+
             if (!isMounted) return;
             registeredDevices.current.set(stableId, registeredDevice.id);
           }

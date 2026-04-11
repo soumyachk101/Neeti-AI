@@ -347,6 +347,49 @@ class DeviceTrackingService:
                     "data": {"click_count": click_events}
                 })
             
+            # Virtual camera detection
+            from app.models.models import DeviceType
+            virtual_camera_keywords = ["obs", "virtual", "snap camera", "manycam", "xsplit", "epoccam", "vtube", "mmsh"]
+            virtual_cameras_result = await db.execute(
+                select(PeripheralDevice)
+                .where(
+                    and_(
+                        PeripheralDevice.session_id == session_id,
+                        PeripheralDevice.device_type == DeviceType.WEBCAM
+                    )
+                )
+            )
+            cameras = virtual_cameras_result.scalars().all()
+            for cam in cameras:
+                name_lower = (cam.device_name or "").lower()
+                if any(keyword in name_lower for keyword in virtual_camera_keywords):
+                    anomalies.append({
+                        "type": "virtual_camera_detected",
+                        "severity": "critical",
+                        "message": f"Virtual camera detected: {cam.device_name}",
+                        "data": {"device_name": cam.device_name, "device_id": cam.device_id}
+                    })
+
+            # Check if any virtual camera event tracked specifically
+            virtual_events_result = await db.execute(
+                select(DeviceEvent).where(
+                    and_(
+                        DeviceEvent.session_id == session_id,
+                        DeviceEvent.event_type == 'virtual_camera_detected'
+                    )
+                ).limit(1)
+            )
+            has_virtual_event = virtual_events_result.scalars().first()
+            if has_virtual_event:
+                # Add anomaly if not already added by device check
+                if not any(a["type"] == "virtual_camera_detected" for a in anomalies):
+                    anomalies.append({
+                        "type": "virtual_camera_detected",
+                        "severity": "critical",
+                        "message": "Virtual camera software detected.",
+                        "data": {"event_data": has_virtual_event.event_data}
+                    })
+
             return anomalies
     
     async def cleanup_disconnected_devices(self, session_id: int) -> int:

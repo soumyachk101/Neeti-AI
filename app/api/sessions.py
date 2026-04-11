@@ -151,7 +151,7 @@ async def join_session(
             )
         )
     )
-    candidate = result.scalar_one_or_none()
+    candidate = result.scalars().first()
     
     if not candidate:
         candidate = Candidate(
@@ -221,7 +221,7 @@ async def get_room_token(
                 )
             )
         )
-        is_candidate = result.scalar_one_or_none() is not None
+        is_candidate = result.scalars().first() is not None
     
     if not is_recruiter and not is_candidate:
         raise HTTPException(
@@ -320,7 +320,7 @@ async def get_session(
                 )
             )
         )
-        if not result.scalar_one_or_none():
+        if not result.scalars().first():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not authorized to view this session"

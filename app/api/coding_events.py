@@ -53,7 +53,7 @@ async def verify_session_participant(
             )
         )
     )
-    if not result.scalar_one_or_none():
+    if not result.scalars().first():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to access this session"
