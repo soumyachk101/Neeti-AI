@@ -53,7 +53,7 @@ class DeviceTrackingService:
                     )
                 )
             )
-            existing_device = device_result.scalar_one_or_none()
+            existing_device = device_result.scalars().first()
             
             if existing_device:
                 # Update existing device

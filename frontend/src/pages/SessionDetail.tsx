@@ -74,11 +74,12 @@ export const SessionDetail: React.FC = () => {
   const statusColor = STATUS_MAP[s.status] ?? 'warning';
 
   const timeline = [
-    { label: 'Created',   ts: s.created_at },
+    { label: 'Created', ts: s.created_at },
     { label: 'Scheduled', ts: s.scheduled_at },
-    { label: 'Started',   ts: s.started_at },
-    { label: 'Ended',     ts: s.ended_at },
+    { label: 'Started', ts: s.started_at },
+    { label: 'Ended', ts: s.ended_at },
   ].filter(r => r.ts);
+
 
   return (
     <div className="min-h-screen bg-neeti-bg relative overflow-hidden">
@@ -204,6 +205,23 @@ export const SessionDetail: React.FC = () => {
                     <div className="flex items-center gap-1.5">
                       <StatusIndicator status="success" size="sm" />
                       <span className="text-[10px] text-ink-ghost uppercase tracking-wider">Ready</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+
+            <Card>
+              <h2 className="text-sm font-semibold text-ink-secondary uppercase tracking-wider mb-5">Session Timeline</h2>
+              <div className="space-y-4">
+                {timeline.map((item, i) => (
+                  <div key={i} className="relative pl-4 border-l border-neeti-border pb-1 last:pb-0">
+                    <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary-rgb),0.5)]" />
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-ink-ghost uppercase tracking-wider">{item.label}</span>
+                      <span className="text-xs text-ink-secondary font-mono">
+                        {new Date(item.ts!).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                      </span>
                     </div>
                   </div>
                 ))}

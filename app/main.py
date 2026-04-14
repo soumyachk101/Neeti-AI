@@ -45,15 +45,10 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ── CORS: Explicit origins required when allow_credentials=True ──
+# ── CORS: Dynamic origins from settings ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,7 +59,28 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ── Global exception handler — ensures errors return JSON, not bare 500 ──
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import HTTPException as FastAPIHTTPException
 import traceback
+
+def _cors_headers(request: Request) -> dict:
+    """Build CORS headers for error responses so the browser doesn't mask the real error."""
+    origin = request.headers.get("origin")
+    # In production, we check against the allowed list. In dev (or if origins match), we return the origin.
+    if origin and (origin in settings.cors_origins_list or "*" in settings.cors_origins_list):
+        return {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+        }
+    return {}
+
+@app.exception_handler(FastAPIHTTPException)
+async def http_exception_handler(request: Request, exc: FastAPIHTTPException):
+    """HTTPException with CORS headers so the browser can read the error."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+        headers=_cors_headers(request),
+    )
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -73,6 +89,7 @@ async def global_exception_handler(request: Request, exc: Exception):
     return JSONResponse(
         status_code=500,
         content={"detail": f"Internal server error: {str(exc)}"},
+        headers=_cors_headers(request),
     )
 
 

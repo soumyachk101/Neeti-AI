@@ -255,9 +255,9 @@ class PeripheralDeviceResponse(BaseModel):
     properties: dict[str, Any]
     total_usage_time_seconds: float
     interaction_count: int
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict, validation_alias="meta_data")
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class DeviceEventCreate(BaseModel):
     device_id: int
@@ -286,9 +286,9 @@ class DeviceEventResponse(BaseModel):
     application: Optional[str]
     response_time_ms: Optional[int]
     accuracy: Optional[float]
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] = Field(default_factory=dict, validation_alias="meta_data")
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
 class DeviceMetricsResponse(BaseModel):
     session_id: int

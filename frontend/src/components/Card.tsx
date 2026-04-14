@@ -160,6 +160,13 @@ export const EvidenceCard: React.FC<EvidenceCardProps> = ({
           {evidence}
         </p>
 
+        {timestamp && (
+          <div className="flex justify-end">
+            <span className="text-[10px] font-mono text-ink-ghost uppercase tracking-tighter">
+              {new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </div>
+        )}
       </div>
     </Card>
   );
